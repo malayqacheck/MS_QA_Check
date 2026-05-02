@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Translation QA Checker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #111318;
+    --surface: #181c24;
+    --surface2: #1e2330;
+    --border: #252d3d;
+    --accent: #4f72ff;
+    --accent2: #ff6a8a;
+    --accent3: #6affb8;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --error: #ff4d6d;
+    --warn: #ffbe0b;
+    --ok: #06d6a0;
+    --red-bg: #2a1520;
+    --red-light: #ff4d6d22;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* GRID NOISE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(124,106,255,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,106,255,.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .wrapper { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 0 24px 80px; }
+
+  /* HEADER */
+  header {
+    padding: 48px 0 32px;
+    display: flex; align-items: flex-end; gap: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  .logo-block { display: flex; flex-direction: column; gap: 4px; }
+  header h1 {
+    font-size: 20px;
+    font-weight: 700; letter-spacing: -.3px;
+    color: var(--text);
+    line-height: 1.1;
+  }
+  .copyright-badge {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--muted); white-space: nowrap;
+  }
+
+  /* UPLOAD AREA */
+  .upload-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 700px) { .upload-grid { grid-template-columns: 1fr; } }
+
+  .drop-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: 12px; padding: 28px 24px;
+    cursor: pointer; transition: all .2s;
+    background: var(--surface);
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    text-align: center;
+  }
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--accent); background: #17173a;
+  }
+  .drop-zone.has-file { border-color: var(--accent3); border-style: solid; }
+  .drop-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .drop-icon { font-size: 32px; line-height: 1; }
+  .drop-label { font-size: 13px; font-weight: 600; color: var(--text); }
+  .drop-sub { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+  .drop-filename {
+    font-size: 12px; font-family: 'JetBrains Mono', monospace;
+    color: var(--accent3); word-break: break-all;
+  }
+  .optional-tag {
+    font-size: 10px; font-family: 'JetBrains Mono', monospace;
+    color: var(--muted); background: var(--surface2);
+    border-radius: 3px; padding: 2px 6px; position: absolute; top: 10px; right: 10px;
+  }
+
+  /* OPTIONS */
+  .options-bar {
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+    margin-bottom: 24px; padding: 16px 20px;
+    background: var(--surface); border-radius: 10px; border: 1px solid var(--border);
+  }
+  .options-bar label {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; cursor: pointer; user-select: none;
+  }
+  .options-bar input[type=checkbox] { accent-color: var(--accent); width: 15px; height: 15px; }
+  .options-title { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; margin-right: 4px; }
+
+  /* RUN BUTTON */
+  .run-btn {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; padding: 16px;
+    background: linear-gradient(135deg, var(--accent), #9b6aff);
+    border: none; border-radius: 10px; cursor: pointer;
+    font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 700;
+    color: #fff; letter-spacing: .5px;
+    transition: all .2s; margin-bottom: 32px;
+    box-shadow: 0 0 30px rgba(124,106,255,.25);
+  }
+  .run-btn:hover { transform: translateY(-1px); box-shadow: 0 0 45px rgba(124,106,255,.4); }
+  .run-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+
+  /* SUMMARY CARDS */
+  #summary-area { display: none; margin-bottom: 32px; }
+  .summary-cards {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-bottom: 16px;
+  }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 14px; display: flex; align-items: center; gap: 10px;
+  }
+  .stat-card.highlight { border-color: var(--accent); background: #17173a; }
+  .stat-num { font-size: 18px; font-weight: 700; line-height: 1; white-space: nowrap; }
+  .stat-num.red { color: var(--error); }
+  .stat-num.yellow { color: var(--warn); }
+  .stat-num.green { color: var(--ok); }
+  .stat-num.purple { color: var(--accent); }
+  .stat-label { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; line-height: 1.3; }
+
+  /* EXPORT BAR */
+  .export-bar {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .export-btn {
+    display: flex; align-items: center; gap: 5px;
+    padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--surface); cursor: pointer;
+    font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600;
+    color: var(--text); transition: all .15s;
+  }
+  .export-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .export-btn.primary { background: var(--surface); border-color: var(--border); color: var(--text); }
+  .export-btn.primary:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* RESULTS TABS */
+  #results-area { display: none; }
+  .tab-bar {
+    display: flex; gap: 0; border-bottom: 1px solid var(--border);
+    margin-bottom: 0; overflow-x: auto; scrollbar-width: none;
+  }
+  .tab-bar::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    padding: 10px 20px; border: none; background: transparent;
+    font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+    color: var(--muted); cursor: pointer; white-space: nowrap;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    transition: all .15s;
+  }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-btn:hover:not(.active) { color: var(--text); }
+  .tab-count {
+    display: inline-block; font-size: 10px; font-family: 'JetBrains Mono', monospace;
+    background: var(--surface2); border-radius: 10px;
+    padding: 1px 6px; margin-left: 4px; color: var(--muted);
+  }
+  .tab-btn.active .tab-count { background: var(--accent)22; color: var(--accent); }
+
+  /* TABLE */
+  .table-wrap {
+    border: 1px solid var(--border); border-top: none;
+    border-radius: 0 0 10px 10px; overflow: hidden;
+    background: var(--surface);
+  }
+  .table-search {
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    display: flex; gap: 10px; align-items: center;
+  }
+  .table-search input {
+    flex: 1; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 7px 12px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text);
+    outline: none; transition: border-color .15s;
+  }
+  .table-search input:focus { border-color: var(--accent); }
+  .table-scroll { overflow-x: auto; height: var(--pane-height, 600px); overflow-y: auto; transition: height .05s; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  thead { position: sticky; top: 0; z-index: 10; }
+  thead th {
+    background: var(--surface2); padding: 10px 14px;
+    text-align: left; font-size: 11px; font-weight: 700;
+    letter-spacing: .5px; text-transform: uppercase; color: var(--text);
+    border-bottom: 1px solid var(--border); white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid var(--border)88; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody td { padding: 10px 14px; vertical-align: top; line-height: 1.5; }
+  .col-seg { width: 100px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+  .col-cat { width: 120px; }
+  .col-detail { min-width: 180px; }
+  .col-src, .col-tgt { min-width: 200px; max-width: 320px; word-break: break-word; }
+
+  /* CATEGORY BADGE */
+  .cat-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 10px; font-family: 'JetBrains Mono', monospace; font-weight: 500;
+    white-space: nowrap;
+  }
+  .cat-checklist    { background: #7c6aff22; color: #a89aff; border: 1px solid #7c6aff44; }
+  .cat-missing      { background: #ff4d6d22; color: #ff8099; border: 1px solid #ff4d6d44; }
+  .cat-tag          { background: #ff6a0022; color: #ffaa55; border: 1px solid #ff6a0044; }
+  .cat-number       { background: #ffbe0b22; color: #ffd466; border: 1px solid #ffbe0b44; }
+  .cat-punct        { background: #06d6a022; color: #4defc0; border: 1px solid #06d6a044; }
+  .cat-spaces       { background: #6affb822; color: #80ffcc; border: 1px solid #6affb844; }
+  .cat-inconsistent { background: #ff6a8a22; color: #ffaabc; border: 1px solid #ff6a8a44; }
+  .cat-default      { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+
+  /* HIGHLIGHT in cells */
+  .hl { background: rgba(255,77,109,.25); color: #ffaabc; border-radius: 2px; padding: 0 2px; font-weight: 600; }
+  .hl-diff { background: rgba(255,190,11,.22); color: #ffd466; border-radius: 2px; padding: 0 2px; font-weight: 600; }
+
+  /* EMPTY STATE */
+  .empty-state {
+    padding: 60px 24px; text-align: center;
+    color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 13px;
+  }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; display: block; }
+
+  /* RESIZE HANDLE */
+  .resize-handle {
+    width: 100%; height: 6px; cursor: ns-resize;
+    background: var(--border); border-radius: 0 0 10px 10px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s; user-select: none;
+  }
+  .resize-handle:hover { background: var(--accent); }
+  .resize-handle::after {
+    content: ''; display: block;
+    width: 32px; height: 2px;
+    background: var(--muted); border-radius: 2px;
+  }
+  .resize-handle:hover::after { background: #fff; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--surface2); border-radius: 6px; }
+  ::-webkit-scrollbar-thumb { background: #3d4a6b; border-radius: 6px; border: 2px solid var(--surface2); }
+  ::-webkit-scrollbar-thumb:hover { background: #5566aa; }
+  * { scrollbar-width: thin; scrollbar-color: #3d4a6b var(--surface2); }
+
+  /* FOOTER */
+  footer {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--bg); border-top: 1px solid var(--border);
+    padding: 10px 24px; display: flex; align-items: center; gap: 12px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted);
+    z-index: 100;
+  }
+  .footer-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+  .footer-dot.green { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <header>
+    <div class="logo-block">
+      <h1>QA Checker</h1>
+      <p style="font-size:12px;color:var(--text);font-style:italic;margin-top:6px;line-height:1.5;font-family:'Inter',sans-serif;font-weight:400;">
+        ⚠ Please make the changes directly on Smartling.<br>
+        You don't have to add comment(s) or send back the QA report.
+      </p>
+    </div>
+    <div style="margin-left:auto;text-align:right;display:flex;flex-direction:column;gap:3px;">
+      <span class="copyright-badge">© ohhuiping@outlook.com</span>
+      <span class="copyright-badge">Last updated: 02 May 2025</span>
+    </div>
+  </header>
+
+  <!-- UPLOAD -->
+  <div class="upload-grid">
+    <div class="drop-zone" id="drop-trans" ondragover="onDrag(event,this)" ondragleave="offDrag(this)" ondrop="onDrop(event,'trans')">
+      <input type="file" accept=".xlsx,.xls,.csv" multiple onchange="onFile(event,'trans')"/>
+      <span class="drop-icon">📄</span>
+      <span class="drop-label">Translation File(s)</span>
+      <span class="drop-sub">.xlsx · .xls · .csv · multiple files supported</span>
+      <span class="drop-filename" id="trans-name">Drop file(s) or click to browse</span>
+    </div>
+    <div class="drop-zone" id="drop-check-panel" style="cursor:default; position:relative;" ondblclick="promptUnlock()">
+      <span class="optional-tag" style="background:#7c6aff22;color:#a89aff;border:1px solid #7c6aff44;">built-in</span>
+      <span class="drop-icon">✅</span>
+      <span class="drop-label" id="check-name">_Shopify_Checklist_MS_Excel.xlsx</span>
+      <span class="drop-sub" id="checklist-status-label" style="color:var(--ok);">✓ Embedded &amp; active</span>
+      <div id="upload-area" style="display:none;flex-direction:column;align-items:center;gap:6px;width:100%;position:relative;margin-top:4px;">
+        <input type="file" accept=".xlsx,.xls,.csv" onchange="onFile(event,'check')" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;"/>
+        <span style="font-size:12px;color:var(--accent3);font-family:'JetBrains Mono',monospace;">🔓 Unlocked — drop new checklist or click</span>
+        <button onclick="relockChecklist(event)" style="padding:4px 12px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px;cursor:pointer;z-index:2;position:relative;">Re-lock</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTIONS -->
+  <div class="options-bar">
+    <span class="options-title">Checks:</span>
+    <label><input type="checkbox" id="chk-missing" checked/> Missing Translation</label>
+    <label><input type="checkbox" id="chk-tags" checked/> Tags</label>
+    <label><input type="checkbox" id="chk-numbers" checked/> Numbers</label>
+    <label><input type="checkbox" id="chk-punct" checked/> Punctuation</label>
+    <label><input type="checkbox" id="chk-spaces" checked/> Spaces</label>
+    <label><input type="checkbox" id="chk-inconsist" checked/> Inconsistency</label>
+    <label><input type="checkbox" id="chk-grammar" checked/> Checklist</label>
+  </div>
+
+  <button class="run-btn" id="run-btn" onclick="runQA()">
+    <span>▶</span> Run QA Check
+  </button>
+
+
+  <!-- SUMMARY -->
+  <div id="summary-area">
+    <div class="summary-cards" id="summary-cards"></div>
+    <div class="export-bar">
+      <button class="export-btn primary" onclick="exportExcel()">⬇ Download Excel Report</button>
+      <button class="export-btn" onclick="exportCSV()">⬇ Download CSV</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results-area">
+    <div class="tab-bar" id="tab-bar"></div>
+    <div class="table-wrap">
+      <div id="spaces-disclaimer" style="display:none;padding:10px 16px;background:#fff9e622;border-bottom:1px solid #ffbe0b44;font-size:12px;color:var(--text);font-style:italic;font-family:'Inter',sans-serif;font-weight:400;">
+        ⚠ Some errors are due to placeholder, please ignore those.
+      </div>
+      <div class="table-search" style="flex-direction:column;align-items:stretch;gap:8px;">
+        <div style="display:flex;gap:10px;align-items:center;">
+          <div style="position:relative;flex:1;">
+            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none;">⌕</span>
+            <input type="text" id="search-box" placeholder="Search issues…" oninput="filterTable()"
+              style="width:100%;padding-left:30px;"/>
+          </div>
+          <span id="row-count" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);white-space:nowrap;"></span>
+          <button id="toggle-ignored-btn" onclick="toggleShowIgnored()" style="display:none;padding:5px 12px;background:transparent;border:1.5px solid var(--border);border-radius:20px;color:var(--muted);font-family:'Inter',sans-serif;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s;">Show Ignored</button>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button id="btn-case" onclick="toggleSearchOpt('case')"
+            style="padding:3px 10px;background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-family:'Inter',sans-serif;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .15s;">Match Case</button>
+          <button id="btn-whole" onclick="toggleSearchOpt('whole')"
+            style="padding:3px 10px;background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-family:'Inter',sans-serif;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .15s;">Match Word</button>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table id="issue-table">
+          <thead>
+            <tr>
+              <th class="col-seg">Seg ID</th>
+              <th class="col-cat">Category</th>
+              <th class="col-src">Source</th>
+              <th class="col-tgt">Target</th>
+              <th class="col-detail">Detail</th>
+              <th style="width:60px;text-align:center;"></th>
+            </tr>
+          </thead>
+          <tbody id="issue-body"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="resize-handle" id="resize-handle" title="Drag to resize"></div>
+  </div>
+
+</div>
+
+<footer>
+  <span class="footer-dot" id="status-dot"></span>
+  <span id="status-text">Ready — load a file to begin</span>
+</footer>
+
+<script>
+
+// ─── EMBEDDED CHECKLIST ────────────────────────────────────────────────────────
+const EMBEDDED_B64 = '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';
+const EMBEDDED_FILENAME = '_Shopify_Checklist_MS_Excel.xlsx';
+const CHECKLIST_PASSWORD = 'shopify2024';  // ← change this password as needed
+let checklistUnlocked = false;
+
+function promptUnlock() {
+  if (checklistUnlocked) return;
+  const pw = prompt('Enter password to replace checklist:');
+  if (pw === null) return; // cancelled
+  if (pw === CHECKLIST_PASSWORD) {
+    checklistUnlocked = true;
+    document.getElementById('upload-area').style.display = 'flex';
+    document.getElementById('checklist-status-label').textContent = '🔓 Unlocked — drop new checklist or click';
+    document.getElementById('checklist-status-label').style.color = 'var(--warn)';
+  } else {
+    alert('Incorrect password.');
+  }
+}
+
+function relockChecklist(e) {
+  e.preventDefault(); e.stopPropagation();
+  checklistUnlocked = false;
+  document.getElementById('upload-area').style.display = 'none';
+  document.getElementById('checklist-status-label').textContent = checkFile
+    ? '✓ Custom checklist active'
+    : '✓ Embedded & active';
+  document.getElementById('checklist-status-label').style.color = 'var(--ok)';
+}
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let transFiles = [], checkFile = null;
+let allIssues = [], tabGroups = {}, activeTab = 'All Issues';
+let ignoredKeys = new Set();
+let showIgnored = false;
+let searchCase = false;
+let searchWhole = false;
+
+// ─── FILE HANDLING ────────────────────────────────────────────────────────────
+function onDrag(e, el) { e.preventDefault(); el.classList.add('drag-over'); }
+function offDrag(el) { el.classList.remove('drag-over'); }
+function onDrop(e, which) {
+  e.preventDefault();
+  offDrag(document.getElementById('drop-' + which));
+  const files = [...e.dataTransfer.files];
+  if (files.length) setFile(files, which);
+}
+function onFile(e, which) {
+  const files = [...e.target.files];
+  if (files.length) setFile(files, which);
+}
+function setFile(files, which) {
+  if (which === 'trans') {
+    transFiles = files;
+    const names = files.map(f=>f.name).join(', ');
+    document.getElementById('trans-name').textContent = files.length > 1 ? `${files.length} files: ${names}` : files[0].name;
+    document.getElementById('drop-trans').classList.add('has-file');
+    setStatus(`${files.length} translation file(s) loaded`, false);
+  } else {
+    checkFile = files[0];
+    document.getElementById('check-name').textContent = files[0].name;
+    document.getElementById('drop-check-panel').classList.add('has-file');
+    setStatus(`Checklist file: ${files[0].name}`, false);
+  }
+}
+
+// ─── RESIZE PANE ──────────────────────────────────────────────────────────────
+(function() {
+  let dragging = false, startY = 0, startH = 0;
+  const getScroll = () => document.querySelector('.table-scroll');
+  document.addEventListener('DOMContentLoaded', () => {
+    const handle = document.getElementById('resize-handle');
+    if (!handle) return;
+    handle.addEventListener('mousedown', e => {
+      dragging = true; startY = e.clientY;
+      const sc = getScroll();
+      startH = sc ? sc.getBoundingClientRect().height : 600;
+      document.body.style.cursor = 'ns-resize';
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const delta = e.clientY - startY;
+      const newH = Math.max(200, Math.min(window.innerHeight - 200, startH + delta));
+      document.documentElement.style.setProperty('--pane-height', newH + 'px');
+    });
+    document.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    });
+    // Touch support
+    handle.addEventListener('touchstart', e => {
+      dragging = true; startY = e.touches[0].clientY;
+      const sc = getScroll();
+      startH = sc ? sc.getBoundingClientRect().height : 600;
+      e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('touchmove', e => {
+      if (!dragging) return;
+      const delta = e.touches[0].clientY - startY;
+      const newH = Math.max(200, Math.min(window.innerHeight - 200, startH + delta));
+      document.documentElement.style.setProperty('--pane-height', newH + 'px');
+    });
+    document.addEventListener('touchend', () => { dragging = false; });
+  });
+})();
+
+// ─── STATUS ────────────────────────────────────────────────────────────────────
+function setStatus(msg, busy) {
+  document.getElementById('status-text').textContent = msg;
+  document.getElementById('status-dot').className = 'footer-dot' + (busy ? '' : ' green');
+}
+
+// ─── READ FILE → WORKBOOK ─────────────────────────────────────────────────────
+function readWorkbook(file) {
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'array', cellText: true, cellDates: true });
+        res(wb);
+      } catch(err) { rej(err); }
+    };
+    reader.onerror = rej;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// ─── PARSE TRANSLATION FILE ───────────────────────────────────────────────────
+function parseTranslation(wb) {
+  const segments = [];
+  const SRC = 'source text', TGT = 'translation text';
+  for (const sheetName of wb.SheetNames) {
+    const ws = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+    if (rows.length < 2) continue;
+    const hdrs = rows[0].map(h => String(h).trim().toLowerCase());
+    const si = hdrs.indexOf(SRC), ti = hdrs.indexOf(TGT);
+    if (si < 0 || ti < 0) { continue; }
+    for (let i = 1; i < rows.length; i++) {
+      const src = String(rows[i][si] ?? '').trim();
+      const tgt = String(rows[i][ti] ?? '').trim();
+      if (src || tgt) segments.push({ segId: `${sheetName}!R${i+1}`, src, tgt });
+    }
+  }
+  return segments;
+}
+
+function parseTranslationCSV(text) {
+  const wb = XLSX.read(text, { type: 'string' });
+  return parseTranslation(wb);
+}
+
+// ─── PARSE CHECKLIST ──────────────────────────────────────────────────────────
+function parseChecklist(wb) {
+  const rules = [];
+  for (const sheetName of wb.SheetNames) {
+    const ws = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+    const tabRules = parseChecklistRows(rows, sheetName);
+    rules.push(...tabRules);
+  }
+  return rules;
+}
+
+function parseChecklistRows(rows, tabName) {
+  const rules = [];
+  for (const row of rows) {
+    const cell = k => String(row[k] ?? '').trim();
+    const name  = cell('Check Name');
+    const src   = cell('Source Term');
+    const tgt   = cell('Target Term');
+    const desc  = cell('Description');
+    const caseSens = cell('Case Check').toLowerCase() === 'yes';
+    const whole    = cell('Whole Word').toLowerCase() === 'yes';
+    const withoutV = cell('Without').toLowerCase();
+    const without  = withoutV === 'yes' || withoutV === 'without';
+    const exclRaw  = cell('Exclusion List');
+    const exclusions = exclRaw ? exclRaw.split(/[,;]/).map(s=>s.trim()).filter(Boolean) : [];
+    const pairRaw  = cell('Pair Term');
+    const pairTerms = pairRaw ? pairRaw.split(/[,;]/).map(s=>s.trim()).filter(Boolean) : [];
+    const ctxRaw   = cell('Context Term');
+    const contextTerms = ctxRaw ? ctxRaw.split(/[,;]/).map(s=>s.trim()).filter(Boolean) : [];
+    if (tgt === '#NAME?' || (!src && !tgt)) continue;
+    const srcIsRegex = /[\^\$\[\]\\]|\.\*n|\[.-.]/.test(src);
+    const tgtIsRegex = /[\^\$\[\]\\]|\.\*|\.\*n|\[.-.]/.test(tgt);
+    const tgtNeg = tgt.startsWith('-');
+    const tgtClean = tgtNeg ? tgt.slice(1).trim().replace(/^"|"$/g,'') : tgt.trim().replace(/^"|"$/g,'');
+    let ruleType, srcForDnt;
+    if (pairTerms.length) { ruleType = 'PAIR'; srcForDnt = tgtClean; }
+    else if (!src) { ruleType = isDNT(tgtClean, desc) ? 'A_DNT' : 'A_BAD'; srcForDnt = tgtClean; }
+    else { ruleType = tgtNeg ? 'B_MISS' : 'B_BAD'; srcForDnt = src; }
+    rules.push({ name, ruleType, srcRaw: src, srcForDnt, tgtClean, tgtNeg, desc, caseSens, whole, without,
+      srcIsRegex, tgtIsRegex: tgtIsRegex || /\[.+\]/.test(tgtClean),
+      exclusions, pairTerms, contextTerms, sourceTab: tabName || '' });
+  }
+  return rules;
+}
+
+function isDNT(tgt, desc) {
+  const d = desc.toLowerCase();
+  return d.includes('dnt') || d.includes('do not translate') || d.includes('game name') ||
+         d.includes('feature name') || d.includes('is dnt');
+}
+
+// ─── REGEX HELPERS ────────────────────────────────────────────────────────────
+function posixToPython(p) {
+  return p.replace('[[:punct:]]','[.,!?:;\"\\-()\[\\]{}]').replace('[:punct:]','.,!?:;\"\\-()[]{}')
+          .replace('[[:alpha:]]','[A-Za-z]').replace('[:alpha:]','A-Za-z')
+          .replace('[[:digit:]]','[0-9]').replace('[:digit:]','0-9')
+          .replace('[[:symbol:]]','[&*#%!@^~]').replace('[:symbol:]','&*#%!@^~');
+}
+function safeRegex(pat, flags) {
+  try { return new RegExp(pat, flags); } catch(e) { return null; }
+}
+function matchTerm(text, term, isRegex, whole, caseSens) {
+  const fl = caseSens ? '' : 'i';
+  if (isRegex) { const r = safeRegex(posixToPython(term), fl); return r && r.test(text); }
+  let p = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (whole) p = '(?<![a-zA-Z])' + p + '(?![a-zA-Z])';
+  const r = safeRegex(p, fl); return r && r.test(text);
+}
+
+function parseXbenchTgt(raw) {
+  const t = raw.trim();
+  if (t.includes('" or "')) {
+    const parts = t.split('" or "').map(x=>x.trim().replace(/^"|"$/g,''));
+    return [{ terms: parts, logic: 'OR', negate: false }];
+  }
+  if (t.includes('" -"')) {
+    const halves = t.split('" -"', 2);
+    const specs = [];
+    const pos = halves[0].trim().replace(/^"|"$/g,'');
+    const neg = halves[1]?.trim().replace(/^"|"$/g,'') || '';
+    if (pos) specs.push({ terms:[pos], logic:'AND', negate:false });
+    if (neg) specs.push({ terms:[neg], logic:'AND', negate:true });
+    return specs.length ? specs : [{ terms:[t.replace(/^"|"$/g,'')], logic:'PLAIN', negate:false }];
+  }
+  if (t.includes('" "')) {
+    const parts = t.split('" "').map(x=>x.trim().replace(/^"|"$/g,''));
+    return [{ terms: parts, logic: 'AND', negate: false }];
+  }
+  const rm = t.match(/^<"(.+?)">\s*(.*)/);
+  if (rm) { const pat = rm[1] + (rm[2]||''); return [{ terms:[pat], logic:'REGEX', negate:false }]; }
+  return [{ terms:[t.replace(/^"|"$/g,'')], logic:'PLAIN', negate:false }];
+}
+
+function xbenchMatch(text, rawTgt, isRegex, whole, caseSens) {
+  const fl = caseSens ? '' : 'i';
+  const XB = ['" "','" or "','" -"','<"'];
+  if (isRegex && !XB.some(s=>rawTgt.includes(s))) {
+    const r = safeRegex(posixToPython(rawTgt), fl); return r && r.test(text);
+  }
+  const specs = parseXbenchTgt(rawTgt);
+  function findTerm(term, asRe=false) {
+    if (asRe) { const r = safeRegex(posixToPython(term), fl); return r && r.test(text); }
+    let p = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (whole) p = '(?<![a-zA-Z])' + p + '(?![a-zA-Z])';
+    const r = safeRegex(p, fl); return r && r.test(text);
+  }
+  for (const spec of specs) {
+    let found;
+    if (spec.logic === 'REGEX') found = findTerm(spec.terms[0], true);
+    else if (spec.logic === 'OR') found = spec.terms.some(t=>findTerm(t));
+    else found = spec.terms.every(t=>findTerm(t));
+    if (spec.negate && found) return false;
+    if (!spec.negate && !found) return false;
+  }
+  return true;
+}
+
+function fuzzyMisspelling(text, term, threshold=0.70, caseSens=false) {
+  const tLower = term.toLowerCase();
+  const tokens = [...text.matchAll(/\b\w+\b/g)].map(m=>m[0]);
+  for (const tok of tokens) {
+    const tl = tok.toLowerCase();
+    if (Math.abs(tok.length - term.length) > Math.max(2, Math.floor(term.length * (1-threshold)) + 1)) continue;
+    if (tl === tLower) {
+      if (caseSens && tok !== term) return tok;
+      continue;
+    }
+    if (seqRatio(tLower, tl) >= threshold) return tok;
+  }
+  return null;
+}
+
+function seqRatio(a, b) {
+  // Simple LCS-based ratio similar to SequenceMatcher
+  const m = a.length, n = b.length;
+  if (!m || !n) return 0;
+  const dp = Array.from({length: m+1}, ()=>new Array(n+1).fill(0));
+  let mx = 0;
+  for (let i=1;i<=m;i++) for(let j=1;j<=n;j++) {
+    dp[i][j] = a[i-1]===b[j-1] ? dp[i-1][j-1]+1 : Math.max(dp[i-1][j],dp[i][j-1]);
+    mx = Math.max(mx, dp[i][j]);
+  }
+  return (2*mx)/(m+n);
+}
+
+function extractTermForms(text, term, whole) {
+  let p = term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  if (whole) p = '(?<![a-zA-Z])'+p+'(?![a-zA-Z])';
+  const re = new RegExp(p, 'gi');
+  return [...text.matchAll(re)].map(m=>m[0]);
+}
+
+// ─── QA CHECKS ───────────────────────────────────────────────────────────────
+function checkMissing(seg) {
+  if (seg.src && !seg.tgt)
+    return [issue(seg,'Missing/Empty Translation','Target is empty','','_missing')];
+  return [];
+}
+
+function checkTags(seg) {
+  const st = (seg.src.match(/<[^>]+>/g)||[]);
+  const tt = (seg.tgt.match(/<[^>]+>/g)||[]);
+  if (JSON.stringify(st)===JSON.stringify(tt)) return [];
+  const missing = st.filter(t=>!tt.includes(t));
+  const extra   = tt.filter(t=>!st.includes(t));
+  const parts = [];
+  if (missing.length) parts.push('Missing: '+missing.join(', '));
+  if (extra.length)   parts.push('Extra: '+extra.join(', '));
+  if (!parts.length)  parts.push('Tag order differs');
+  return [issue(seg,'Tag Mismatch',parts.join('; '),extra[0]||tt[0]||'','_tag')];
+}
+
+function checkNumbers(seg) {
+  if (!seg.tgt) return [];
+  const sn = new Set((seg.src.match(/\b\d[\d,.]*\b/g)||[]));
+  const tn = new Set((seg.tgt.match(/\b\d[\d,.]*\b/g)||[]));
+  const miss = [...sn].filter(n=>!tn.has(n));
+  if (miss.length)
+    return [issue(seg,'Number Mismatch','Numbers missing in target: '+miss.join(', '),'','_number')];
+  return [];
+}
+
+function checkPunctuation(seg) {
+  if (!seg.tgt) return [];
+  const terminal = new Set([',','.','!','?',':',';']);
+  const se = seg.src.trimEnd().slice(-1);
+  const te = seg.tgt.trimEnd().slice(-1);
+  const issues = [];
+  if (terminal.has(se) && !terminal.has(te))
+    issues.push(issue(seg,'Punctuation/Spacing',`Source ends '${se}' but target does not`,'','_punct'));
+  else if (!terminal.has(se) && terminal.has(te))
+    issues.push(issue(seg,'Punctuation/Spacing',`Target has extra trailing punctuation '${te}'`,te,'_punct'));
+  if (seg.src.startsWith(' ')!==seg.tgt.startsWith(' '))
+    issues.push(issue(seg,'Punctuation/Spacing','Leading space mismatch','','_punct'));
+  if (seg.src.endsWith(' ')!==seg.tgt.endsWith(' '))
+    issues.push(issue(seg,'Punctuation/Spacing','Trailing space mismatch','','_punct'));
+  return issues;
+}
+
+function checkSpaces(seg) {
+  if (!seg.tgt) return [];
+  const issues = [];
+  if (seg.tgt.includes('  '))
+    issues.push(issue(seg,'Double/Extra Spaces','Double/multiple consecutive spaces in target','  ','_spaces'));
+  if (seg.tgt !== seg.tgt.trim() && seg.src === seg.src.trim())
+    issues.push(issue(seg,'Double/Extra Spaces','Leading or trailing spaces in target','','_spaces'));
+  return issues;
+}
+
+// Diff two strings at word level — returns html with <span class="hl"> on differing words
+function diffHighlight(a, b) {
+  const wa = a.split(/(\s+)/), wb = b.split(/(\s+)/);
+  // Build a set of words in the other string for quick lookup
+  const setA = new Set(wa.filter((_,i)=>i%2===0).map(w=>w.toLowerCase()));
+  const setB = new Set(wb.filter((_,i)=>i%2===0).map(w=>w.toLowerCase()));
+  const renderWords = (words, otherSet) =>
+    words.map((tok, i) => {
+      if (i % 2 !== 0) return escHtml(tok); // whitespace
+      const differs = !otherSet.has(tok.toLowerCase());
+      return differs
+        ? `<span class="hl-diff">${escHtml(tok)}</span>`
+        : escHtml(tok);
+    }).join('');
+  return {
+    a: renderWords(wa, setB),
+    b: renderWords(wb, setA)
+  };
+}
+
+function checkInconsistency(segments) {
+  const map = {};
+  for (const s of segments) {
+    if (!s.src || !s.tgt) continue;
+    if (!map[s.src]) map[s.src] = [];
+    map[s.src].push({ segId: s.segId, tgt: s.tgt });
+  }
+  const issues = [];
+  for (const [src, entries] of Object.entries(map)) {
+    const tgtMap = {};
+    for (const e of entries) {
+      if (!tgtMap[e.tgt]) tgtMap[e.tgt] = [];
+      tgtMap[e.tgt].push(e.segId);
+    }
+    if (Object.keys(tgtMap).length < 2) continue;
+    const variants = Object.keys(tgtMap);
+    const allIds = Object.values(tgtMap).flat();
+    const dispIds = allIds.slice(0,6).join(', ')+(allIds.length>6?` (+${allIds.length-6} more)`:'');
+    // Store variants array for diff rendering
+    issues.push({
+      segId: dispIds, category: 'Inconsistent Translation',
+      src, tgt: variants.join(' | '),
+      detail: `${variants.length} variants`,
+      flagTerm: '', sheetGroup: 'Inconsistent Translation',
+      _variants: variants, _tgtMap: tgtMap
+    });
+  }
+  return issues;
+}
+
+function checkGrammar(seg, rules) {
+  if (!seg.tgt || !rules.length) return [];
+  const issues = [];
+  for (const rule of rules) {
+    const { ruleType, tgtClean, caseSens, whole, without, srcRaw, srcForDnt,
+            srcIsRegex, tgtIsRegex, exclusions, pairTerms, contextTerms, sourceTab, name, desc } = rule;
+    if (!tgtClean) continue;
+
+    const isExcluded = () => exclusions.some(ph => seg.tgt.toLowerCase().includes(ph.toLowerCase()));
+    const tab = sourceTab || '';
+    const sheetGroup = tab.toLowerCase().includes('verb') ? 'Verb Check' : 'Checklist';
+    const cat = tab || sheetGroup;
+
+    const mkIssue = (detail, flagTerm=tgtClean) => ({
+      segId: seg.segId, category: cat, src: seg.src, tgt: seg.tgt,
+      detail: detail || `[${name}] ${desc}`, flagTerm, sheetGroup
+    });
+
+    if (ruleType === 'PAIR') {
+      if (isExcluded()) continue;
+      const ws = (t,text) => {
+        let p = t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+        if (whole) p='(?<![a-zA-Z])'+p+'(?![a-zA-Z])';
+        const r = safeRegex(p,'i'); return r&&r.test(text);
+      };
+      if (!ws(tgtClean, seg.tgt)) continue;
+      if (contextTerms.length && !contextTerms.some(c=>ws(c,seg.tgt))) continue;
+      if (!pairTerms.some(pt=>ws(pt,seg.tgt)))
+        issues.push(mkIssue(`[${name}] ${desc}`, tgtClean));
+
+    } else if (ruleType === 'A_BAD') {
+      if (without) continue;
+      if (xbenchMatch(seg.tgt, tgtClean, tgtIsRegex, whole, caseSens) && !isExcluded())
+        issues.push(mkIssue());
+
+    } else if (ruleType === 'A_DNT') {
+      if (without) {
+        if (!matchTerm(seg.src, srcForDnt, srcIsRegex, whole, caseSens)) continue;
+        if (xbenchMatch(seg.tgt, tgtClean, tgtIsRegex, whole, caseSens)) continue;
+        const mis = fuzzyMisspelling(seg.tgt, tgtClean, 0.70, caseSens);
+        if (!isExcluded()) issues.push(mis
+          ? mkIssue(`[${name}] Misspelling: '${mis}' → '${tgtClean}'. ${desc}`, mis)
+          : mkIssue(`[${name}] Term omitted: '${tgtClean}' expected. ${desc}`, ''));
+      } else {
+        if (!matchTerm(seg.src, srcForDnt, srcIsRegex, whole, caseSens)) continue;
+        if (xbenchMatch(seg.tgt, tgtClean, tgtIsRegex, whole, caseSens)) continue;
+        const mis = fuzzyMisspelling(seg.tgt, tgtClean, 0.70, caseSens);
+        if (!isExcluded()) issues.push(mis
+          ? mkIssue(`[${name}] Misspelling: '${mis}' → '${tgtClean}'. ${desc}`, mis)
+          : mkIssue(`[${name}] Term omitted: '${tgtClean}' expected. ${desc}`, ''));
+      }
+
+    } else if (ruleType === 'B_BAD') {
+      if (without) {
+        if (!matchTerm(seg.src, srcRaw, srcIsRegex, whole, caseSens)) continue;
+        const forms = extractTermForms(seg.src, srcRaw, whole);
+        for (const form of [...new Set(forms)]) {
+          const cnt = forms.filter(f=>f===form).length;
+          let p = form.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+          if (whole) p='(?<![a-zA-Z])'+p+'(?![a-zA-Z])';
+          const re = safeRegex(p); const tgtCnt = re ? (seg.tgt.match(new RegExp(p,'g'))||[]).length : 0;
+          if (tgtCnt >= cnt) continue;
+          const mis = fuzzyMisspelling(seg.tgt, form, 0.70, true);
+          if (!isExcluded()) issues.push(mis
+            ? mkIssue(`[${name}] Misspelling: '${mis}' → '${form}'. ${desc}`, mis)
+            : mkIssue(`[${name}] Term omitted: '${form}' expected. ${desc}`, ''));
+        }
+      } else {
+        if (!matchTerm(seg.src, srcRaw, srcIsRegex, whole, caseSens)) continue;
+        if (xbenchMatch(seg.tgt, tgtClean, tgtIsRegex, whole, true) && !isExcluded())
+          issues.push(mkIssue());
+      }
+
+    } else if (ruleType === 'B_MISS') {
+      if (!matchTerm(seg.src, srcRaw, srcIsRegex, whole, caseSens)) continue;
+      const exact = xbenchMatch(seg.tgt, tgtClean, tgtIsRegex, whole, true);
+      if (without && exact) continue;
+      if (!exact) {
+        const mis = fuzzyMisspelling(seg.tgt, tgtClean, 0.70, caseSens);
+        if (!isExcluded()) issues.push(mis
+          ? mkIssue(`[${name}] Misspelling: '${mis}' → '${tgtClean}'. ${desc}`, mis)
+          : mkIssue());
+      }
+    }
+  }
+  return issues;
+}
+
+function issue(seg, cat, detail, flagTerm, sheetGroup) {
+  return { segId: seg.segId, category: cat, src: seg.src, tgt: seg.tgt, detail, flagTerm, sheetGroup: sheetGroup||cat };
+}
+
+// ─── MAIN RUNNER ──────────────────────────────────────────────────────────────
+async function runQA() {
+  if (!transFiles.length) { alert('Please load a translation file first.'); return; }
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  document.getElementById('summary-area').style.display = 'none';
+  document.getElementById('results-area').style.display = 'none';
+  allIssues = [];
+
+  try {
+    setStatus('Reading files…', true);
+    const segments = [];
+    for (const tf of transFiles) {
+      const wb = await readWorkbook(tf);
+      const segs = parseTranslation(wb);
+      segments.push(...segs);
+    }
+
+    let rules = [];
+    if (checkFile) {
+        const checkWb = await readWorkbook(checkFile);
+      rules = parseChecklist(checkWb);
+      } else {
+        const binStr = atob(EMBEDDED_B64);
+      const bytes = new Uint8Array(binStr.length);
+      for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+      const embWb = XLSX.read(bytes.buffer, { type: 'array' });
+      rules = parseChecklist(embWb);
+      }
+
+    const checks = {
+      missing: document.getElementById('chk-missing').checked,
+      tags:    document.getElementById('chk-tags').checked,
+      numbers: document.getElementById('chk-numbers').checked,
+      punct:   document.getElementById('chk-punct').checked,
+      spaces:  document.getElementById('chk-spaces').checked,
+      inconsist: document.getElementById('chk-inconsist').checked,
+      grammar: document.getElementById('chk-grammar').checked && rules.length > 0,
+    };
+
+    for (const seg of segments) {
+      if (checks.missing)  allIssues.push(...checkMissing(seg));
+      if (checks.tags)     allIssues.push(...checkTags(seg));
+      if (checks.numbers)  allIssues.push(...checkNumbers(seg));
+      if (checks.punct)    allIssues.push(...checkPunctuation(seg));
+      if (checks.spaces)   allIssues.push(...checkSpaces(seg));
+      if (checks.grammar)  allIssues.push(...checkGrammar(seg, rules));
+    }
+    if (checks.inconsist) allIssues.push(...checkInconsistency(segments));
+
+    setStatus(`Done — ${allIssues.length} issues found`, false);
+
+    buildTabs();
+    renderSummary(segments.length, rules.length);
+    document.getElementById('summary-area').style.display = 'block';
+    document.getElementById('results-area').style.display = 'block';
+    switchTab('All Issues');
+
+  } catch(e) {
+    setStatus('Error — ' + e.message, false);
+    console.error(e);
+  }
+  btn.disabled = false;
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+function buildTabs() {
+  // Group issues
+  tabGroups = { 'All Issues': allIssues };
+
+  // Checklist tab — issues with sheetGroup = 'Checklist'
+  const checklistIssues = allIssues.filter(i=>i.sheetGroup==='Checklist');
+  if (checklistIssues.length) tabGroups['Checklist'] = checklistIssues;
+
+  // Verb Check tab
+  const verbIssues = allIssues.filter(i=>i.sheetGroup==='Verb Check');
+  if (verbIssues.length) tabGroups['Verb Check'] = verbIssues;
+
+  // Other standard QA categories
+  const STD = ['Missing/Empty Translation','Tag Mismatch','Number Mismatch','Punctuation/Spacing','Inconsistent Translation'];
+  for (const cat of STD) {
+    const ci = allIssues.filter(i=>i.category===cat);
+    if (ci.length) tabGroups[cat] = ci;
+  }
+
+  // Double/Extra Spaces — always last
+  const spaceIssues = allIssues.filter(i=>i.category==='Double/Extra Spaces');
+  if (spaceIssues.length) tabGroups['Double/Extra Spaces'] = spaceIssues;
+
+  const bar = document.getElementById('tab-bar');
+  bar.innerHTML = '';
+  for (const [name, issues] of Object.entries(tabGroups)) {
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn';
+    btn.innerHTML = `${escHtml(name)}<span class="tab-count">${issues.length}</span>`;
+    btn.onclick = () => switchTab(name);
+    bar.appendChild(btn);
+  }
+}
+
+function switchTab(name) {
+  activeTab = name;
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>{
+    b.classList.toggle('active', Object.keys(tabGroups)[i]===name);
+  });
+  document.getElementById('search-box').value = '';
+  renderTable(tabGroups[name] || []);
+}
+
+// ─── TABLE ─────────────────────────────────────────────────────────────────────
+function catClass(cat) {
+  if (!cat) return 'cat-default';
+  const cl = cat.toLowerCase();
+  if (cl.includes('missing')) return 'cat-missing';
+  if (cl.includes('tag')) return 'cat-tag';
+  if (cl.includes('number')) return 'cat-number';
+  if (cl.includes('punct')) return 'cat-punct';
+  if (cl.includes('space')) return 'cat-spaces';
+  if (cl.includes('inconsist')) return 'cat-inconsistent';
+  return 'cat-checklist';
+}
+
+function highlight(text, term) {
+  if (!term || !text) return escHtml(text);
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  // Use word boundaries so "ke" doesn't match inside "kedai", "kepada" etc.
+  // Fall back to plain match if boundary fails (e.g. term starts/ends with non-word char)
+  let re;
+  try { re = new RegExp('(?<![\\w])(' + escaped + ')(?![\\w])', 'gi'); }
+  catch(e) { re = new RegExp('(' + escaped + ')', 'gi'); }
+  return escHtml(text).replace(re, '<span class="hl">$1</span>');
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function issueKey(iss) {
+  return iss.segId + '|' + iss.category + '|' + iss.detail;
+}
+
+function toggleIgnore(key) {
+  if (ignoredKeys.has(key)) ignoredKeys.delete(key);
+  else ignoredKeys.add(key);
+  const btn = document.getElementById('toggle-ignored-btn');
+  btn.style.display = ignoredKeys.size > 0 ? 'inline-flex' : 'none';
+  btn.textContent = showIgnored ? 'Hide Ignored' : `Show Ignored (${ignoredKeys.size})`;
+  btn.style.borderColor = '#4f9eff';
+  btn.style.color = '#4f9eff';
+  btn.style.background = '#4f9eff15';
+  filterTable();
+}
+
+function toggleShowIgnored() {
+  showIgnored = !showIgnored;
+  const btn = document.getElementById('toggle-ignored-btn');
+  btn.textContent = showIgnored ? 'Hide Ignored' : `Show Ignored (${ignoredKeys.size})`;
+  btn.style.borderColor = showIgnored ? '#4f9eff' : 'var(--border)';
+  btn.style.color = showIgnored ? '#4f9eff' : 'var(--muted)';
+  btn.style.background = showIgnored ? '#4f9eff18' : 'transparent';
+  filterTable();
+}
+
+function searchHighlight(text, q) {
+  if (!q || !text) return escHtml(text);
+  const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  let re;
+  try {
+    if (searchWhole) re = new RegExp('(?<![\\w])(' + escaped + ')(?![\\w])', searchCase ? 'g' : 'gi');
+    else re = new RegExp('(' + escaped + ')', searchCase ? 'g' : 'gi');
+  } catch(e) { return escHtml(text); }
+  return escHtml(text).replace(re, '<span class="hl-diff">$1</span>');
+}
+
+function renderTable(issues) {
+  const body = document.getElementById('issue-body');
+  const visible = showIgnored ? issues : issues.filter(i => !ignoredKeys.has(issueKey(i)));
+  const ignored = issues.filter(i => ignoredKeys.has(issueKey(i)));
+
+  if (!visible.length && !ignored.length) {
+    body.innerHTML = `<tr><td colspan="6"><div class="empty-state"><span class="empty-icon">✅</span>No issues found in this category</div></td></tr>`;
+    document.getElementById('row-count').textContent = '0 rows';
+    return;
+  }
+
+  const _q = document.getElementById('search-box').value;
+  body.innerHTML = visible.map(iss => {
+    const key = issueKey(iss);
+    const isIgnored = ignoredKeys.has(key);
+    const btnId = 'btn-' + Math.random().toString(36).slice(2);
+    // For inconsistency issues, render diff between variants
+    let tgtHtml, detailHtml;
+    if (iss._variants && iss._variants.length >= 2) {
+      const d = diffHighlight(iss._variants[0], iss._variants[1]);
+      const ids0 = iss._tgtMap[iss._variants[0]].slice(0,3).join(', ');
+      const ids1 = iss._tgtMap[iss._variants[1]].slice(0,3).join(', ');
+      tgtHtml = `<div style="margin-bottom:6px;"><span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;">Seg ${escHtml(ids0)}</span><br>${d.a}</div>`
+               +`<div><span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;">Seg ${escHtml(ids1)}</span><br>${d.b}</div>`;
+      detailHtml = escHtml(iss.detail);
+    } else {
+      tgtHtml = highlight(iss.tgt, iss.flagTerm);
+      if (_q) tgtHtml = tgtHtml.replace(new RegExp('(?<![\w])(' + _q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')(?![\w])', searchCase?'g':'gi'), '<span class="hl-diff">$1</span>');
+      detailHtml = escHtml(iss.detail);
+    }
+    return `<tr style="${isIgnored ? 'opacity:.4;' : ''}">
+      <td class="col-seg">${searchHighlight(iss.segId, _q)}</td>
+      <td class="col-cat"><span class="cat-badge ${catClass(iss.category)}">${searchHighlight(iss.category, _q)}</span></td>
+      <td class="col-src">${searchHighlight(iss.src, _q)}</td>
+      <td class="col-tgt">${tgtHtml}</td>
+      <td class="col-detail">${searchHighlight(plainDetail(iss), _q)}</td>
+      <td style="vertical-align:top;padding:8px 10px 0;white-space:nowrap;">
+        <button data-key="${escHtml(key)}" onclick="toggleIgnore(this.dataset.key)"
+          style="display:inline-flex;align-items:center;gap:4px;
+            border:1.5px solid ${isIgnored ? 'var(--ok)' : '#c9607a'};
+            background:${isIgnored ? '#06d6a018' : '#c9607a18'};
+            color:${isIgnored ? 'var(--ok)' : '#c9607a'};
+            cursor:pointer;font-size:11px;font-weight:700;
+            padding:3px 10px;border-radius:20px;
+            font-family:'Inter',sans-serif;letter-spacing:.3px;
+            white-space:nowrap;">
+          ${isIgnored ? '&#8629; Restore' : '&times; Ignore'}
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const activeCount = issues.filter(i => !ignoredKeys.has(issueKey(i))).length;
+  const ignoredCount = ignoredKeys.size;
+  document.getElementById('row-count').textContent =
+    ignoredCount > 0
+      ? `${activeCount} active · ${ignoredCount} ignored`
+      : `${activeCount} rows`;
+}
+
+function onSearchInput() {
+  const val = document.getElementById('search-box').value;
+  const btn = document.getElementById('search-clear');
+  btn.style.display = val ? 'flex' : 'none';
+  filterTable();
+}
+
+function clearSearch() {
+  document.getElementById('search-box').value = '';
+  document.getElementById('search-clear').style.display = 'none';
+  filterTable();
+}
+
+function toggleSearchOpt(opt) {
+  if (opt === 'case') {
+    searchCase = !searchCase;
+    const btn = document.getElementById('btn-case');
+    btn.style.borderColor = searchCase ? '#4f9eff' : 'var(--border)';
+    btn.style.color = searchCase ? '#4f9eff' : 'var(--muted)';
+    btn.style.background = searchCase ? '#4f9eff15' : 'transparent';
+  } else {
+    searchWhole = !searchWhole;
+    const btn = document.getElementById('btn-whole');
+    btn.style.borderColor = searchWhole ? '#4f9eff' : 'var(--border)';
+    btn.style.color = searchWhole ? '#4f9eff' : 'var(--muted)';
+    btn.style.background = searchWhole ? '#4f9eff15' : 'transparent';
+  }
+  filterTable();
+}
+
+function matchesSearch(iss, q) {
+  if (!q) return true;
+  const fields = [iss.segId, iss.category, iss.src, plainTgt(iss), plainDetail(iss)].join(' ');
+  if (searchWhole) {
+    try {
+      const flags = searchCase ? 'g' : 'gi';
+      const re = new RegExp('(?<![\\w])' + q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '(?![\\w])', flags);
+      return re.test(fields);
+    } catch(e) { return false; }
+  }
+  return searchCase ? fields.includes(q) : fields.toLowerCase().includes(q.toLowerCase());
+}
+
+function filterTable() {
+  const q = document.getElementById('search-box').value;
+  const source = tabGroups[activeTab] || [];
+  const base = showIgnored ? source : source.filter(i => !ignoredKeys.has(issueKey(i)));
+  const filtered = q ? base.filter(i => matchesSearch(i, q)) : base;
+  renderTable(filtered.length < source.length && !q ? source : filtered);
+}
+
+// ─── SUMMARY ──────────────────────────────────────────────────────────────────
+function renderSummary(totalSegs, totalRules) {
+  const cats = {};
+  for (const i of allIssues) cats[i.category] = (cats[i.category]||0)+1;
+  const cards = document.getElementById('summary-cards');
+  const mk = (num, label, cls) => `<div class="stat-card highlight"><div class="stat-num ${cls}">${num}</div><div class="stat-label">${label}</div></div>`;
+  let html = mk(totalSegs,'segments\nanalysed','purple') + mk(allIssues.length,'total issues','red');
+  for (const [cat, cnt] of Object.entries(cats).sort((a,b)=>b[1]-a[1]))
+    html += mk(cnt, escHtml(cat), cnt>10?'red':cnt>3?'yellow':'green');
+  if (totalRules) html += mk(totalRules,'checklist\nrules','purple');
+  cards.innerHTML = html;
+}
+
+// ─── EXPORT EXCEL ─────────────────────────────────────────────────────────────
+function sanitiseSheet(name) {
+  return name.replace(/[:\\/\?\*\[\]]/g, '-').substring(0, 31);
+}
+
+function exportExcel() {
+  try {
+    if (!allIssues.length) { alert('No issues to export. Run QA first.'); return; }
+    const wb = XLSX.utils.book_new();
+    const COLS = ['Segment ID','Category','Source','Target','Detail'];
+    const s = v => String(v == null ? '' : v);
+    const toRow = i => [s(i.segId), s(i.category), s(i.src), s(plainTgt(i)), s(plainDetail(i))];
+    const setW = ws => { ws['!cols'] = [14,20,45,45,55].map(w=>({wch:w})); return ws; };
+
+    // Summary
+    const cats = {};
+    for (const i of allIssues) cats[s(i.category)] = (cats[s(i.category)]||0)+1;
+    const sumRows = [['QA Check Summary'],[''],['Category','Count'],
+      ...Object.entries(cats).sort((a,b)=>b[1]-a[1]), [], ['Total Issues', allIssues.length]];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sumRows), 'Summary');
+
+    const active = allIssues.filter(i => !ignoredKeys.has(issueKey(i)));
+
+    // All Issues
+    XLSX.utils.book_append_sheet(wb, setW(XLSX.utils.aoa_to_sheet([COLS, ...active.map(toRow)])), 'All Issues');
+
+    // Checklist
+    const cl = active.filter(i=>i.sheetGroup==='Checklist');
+    if (cl.length) XLSX.utils.book_append_sheet(wb, setW(XLSX.utils.aoa_to_sheet([COLS,...cl.map(toRow)])), 'Checklist');
+
+    // Verb Check
+    const vb = active.filter(i=>i.sheetGroup==='Verb Check');
+    if (vb.length) XLSX.utils.book_append_sheet(wb, setW(XLSX.utils.aoa_to_sheet([COLS,...vb.map(toRow)])), 'Verb Check');
+
+    // Standard QA
+    for (const cat of ['Missing/Empty Translation','Tag Mismatch','Number Mismatch','Punctuation/Spacing','Inconsistent Translation']) {
+      const ci = active.filter(i=>i.category===cat);
+      if (ci.length) XLSX.utils.book_append_sheet(wb, setW(XLSX.utils.aoa_to_sheet([COLS,...ci.map(toRow)])), sanitiseSheet(cat));
+    }
+
+    // Double/Extra Spaces
+    const sp = active.filter(i=>i.category==='Double/Extra Spaces');
+    if (sp.length) XLSX.utils.book_append_sheet(wb, setW(XLSX.utils.aoa_to_sheet([COLS,...sp.map(toRow)])), 'Double-Extra Spaces');
+
+    // Download
+    const fname = 'QA_Report_' + new Date().toISOString().slice(0,10) + '.xlsx';
+    const buf = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([buf], {type:'application/octet-stream'}));
+    a.download = fname;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 300);
+  } catch(e) {
+    alert('Export failed: ' + e.message);
+    console.error(e);
+  }
+}
+
+function plainTgt(iss) {
+  // For inconsistency issues, return plain text variants instead of HTML
+  if (iss._variants) return iss._variants.join(' | ');
+  return iss.tgt;
+}
+
+function plainDetail(iss) {
+  if (iss._variants) return `${iss._variants.length} variants: ` + iss._variants.map((v,i)=>{
+    const ids = iss._tgtMap[v].slice(0,5).join(', ');
+    return `[Seg ${ids}] ${v}`;
+  }).join(' | ');
+  return iss.detail;
+}
+
+function addSheet(wb, name, issues, cols) {
+  // Exclude ignored issues from export
+  const active = issues.filter(i => !ignoredKeys.has(issueKey(i)));
+  const rows = [cols, ...active.map(i=>[i.segId, i.category, i.src, plainTgt(i), plainDetail(i)])];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [14,20,45,45,55].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb, ws, name);
+}
+
+function exportCSV() {
+  const active = allIssues.filter(i => !ignoredKeys.has(issueKey(i)));
+  const rows = [['Segment ID','Category','Source','Target','Detail'],
+    ...active.map(i=>[i.segId,i.category,i.src,plainTgt(i),plainDetail(i)])];
+  const csv = rows.map(r=>r.map(c=>'"'+String(c||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`QA_Report_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+}
+</script>
+</body>
+</html>
