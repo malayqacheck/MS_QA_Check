@@ -1,0 +1,1756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Translation QA Checker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #111318;
+    --surface: #181c24;
+    --surface2: #1e2330;
+    --border: #252d3d;
+    --accent: #4f72ff;
+    --accent2: #ff6a8a;
+    --accent3: #6affb8;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --error: #e06070;
+    --warn: #ffbe0b;
+    --ok: #06d6a0;
+    --red-bg: #2a1520;
+    --red-light: #ff4d6d22;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* GRID NOISE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(124,106,255,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,106,255,.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .wrapper { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 0 24px 80px; }
+
+  /* HEADER */
+  header {
+    padding: 48px 0 32px;
+    display: flex; align-items: flex-end; gap: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  .logo-block { display: flex; flex-direction: column; gap: 4px; }
+  header h1 {
+    font-size: 22px;
+    font-weight: 700; letter-spacing: -.3px;
+    color: var(--text);
+    line-height: 1.1;
+  }
+  .copyright-badge {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--muted); white-space: nowrap;
+  }
+
+  /* UPLOAD AREA */
+  .upload-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 700px) { .upload-grid { grid-template-columns: 1fr; } }
+
+  .drop-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: 12px; padding: 28px 24px;
+    cursor: pointer; transition: all .2s;
+    background: var(--surface);
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    text-align: center;
+  }
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--accent); background: #17173a;
+  }
+  .drop-zone.has-file { border-color: var(--accent3); border-style: solid; }
+  .drop-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .drop-icon { font-size: 32px; line-height: 1; }
+  .drop-label { font-size: 13px; font-weight: 600; color: var(--text); }
+  .drop-sub { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+  .drop-filename {
+    font-size: 12px; font-family: 'JetBrains Mono', monospace;
+    color: var(--accent3); word-break: break-all;
+  }
+  .optional-tag {
+    font-size: 10px; font-family: 'JetBrains Mono', monospace;
+    color: var(--muted); background: var(--surface2);
+    border-radius: 3px; padding: 2px 6px; position: absolute; top: 10px; right: 10px;
+  }
+
+  /* OPTIONS */
+  .options-bar {
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+    margin-bottom: 24px; padding: 16px 20px;
+    background: var(--surface); border-radius: 10px; border: 1px solid var(--border);
+  }
+  .options-bar label {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; cursor: pointer; user-select: none;
+  }
+  .options-bar input[type=checkbox] { accent-color: var(--accent); width: 15px; height: 15px; }
+  .options-title { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; margin-right: 4px; }
+
+  /* RUN BUTTON */
+  .run-btn {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; padding: 16px;
+    background: linear-gradient(135deg, var(--accent), #9b6aff);
+    border: none; border-radius: 10px; cursor: pointer;
+    font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 700;
+    color: #fff; letter-spacing: .5px;
+    transition: all .2s; margin-bottom: 32px;
+    box-shadow: 0 0 30px rgba(124,106,255,.25);
+  }
+  .run-btn:hover { transform: translateY(-1px); box-shadow: 0 0 45px rgba(124,106,255,.4); }
+  .run-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+
+  /* SUMMARY CARDS */
+  #summary-area { display: none; margin-bottom: 32px; }
+  .summary-cards {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-bottom: 16px;
+  }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+    padding: 5px 10px; display: flex; align-items: center; gap: 7px;
+  }
+  .stat-card.highlight { border-color: var(--accent); background: #17173a; }
+  .stat-num { font-size: 13px; font-weight: 700; line-height: 1; white-space: nowrap; color: var(--error); }
+  .stat-num.red { color: var(--error); }
+  .stat-num.yellow { color: var(--error); }
+  .stat-num.green { color: var(--error); }
+  .stat-num.purple { color: var(--accent); }
+  .stat-label { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; line-height: 1.3; font-weight: 700; }
+
+  /* EXPORT BAR */
+  .export-bar {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .export-btn {
+    display: flex; align-items: center; gap: 5px;
+    padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--surface); cursor: pointer;
+    font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600;
+    color: var(--text); transition: all .15s;
+  }
+  .export-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .export-btn.primary { background: var(--surface); border-color: var(--border); color: var(--text); }
+  .export-btn.primary:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* RESULTS TABS */
+  #results-area { display: none; }
+  .tab-bar {
+    display: flex; gap: 0; border-bottom: 1px solid var(--border);
+    margin-bottom: 0; overflow-x: auto; scrollbar-width: none;
+  }
+  .tab-bar::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    padding: 10px 20px; border: none; background: transparent;
+    font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+    color: var(--muted); cursor: pointer; white-space: nowrap;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    transition: all .15s;
+  }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-btn:hover:not(.active) { color: var(--text); }
+  .tab-count {
+    display: inline-block; font-size: 10px; font-family: 'JetBrains Mono', monospace;
+    background: var(--surface2); border-radius: 10px;
+    padding: 1px 6px; margin-left: 4px; color: var(--muted);
+  }
+  .tab-btn.active .tab-count { background: var(--accent)22; color: var(--accent); }
+
+  /* TABLE */
+  .table-wrap {
+    border: 1px solid var(--border); border-top: none;
+    border-radius: 0 0 10px 10px; overflow: hidden;
+    background: var(--surface);
+  }
+  .table-search {
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    display: flex; gap: 10px; align-items: center;
+  }
+  .table-search input {
+    flex: 1; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 7px 12px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text);
+    outline: none; transition: border-color .15s;
+  }
+  .table-search input:focus { border-color: var(--accent); }
+  .table-scroll { overflow-x: auto; height: var(--pane-height, 600px); overflow-y: auto; transition: height .05s; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+
+  thead { position: sticky; top: 0; z-index: 10; }
+  thead th {
+    background: var(--surface2); padding: 10px 14px;
+    text-align: left; font-size: 11px; font-weight: 700;
+    letter-spacing: .5px; text-transform: uppercase; color: var(--text);
+    border-bottom: 1px solid var(--border); white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid var(--border)88; }
+  tbody tr:nth-child(odd)  { background: #1e2435; }
+  tbody tr:nth-child(even) { background: #252d42; }
+  tbody tr:hover { background: #2e3855; }
+  tbody td { padding: 10px 14px; vertical-align: top; line-height: 1.5; }
+  .col-seg { width: 100px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+  .col-cat { width: 120px; }
+  .col-detail { min-width: 180px; }
+  .col-src, .col-tgt { min-width: 200px; max-width: 320px; word-break: break-word; }
+
+  /* CATEGORY BADGE */
+  .cat-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 10px; font-family: 'JetBrains Mono', monospace; font-weight: 500;
+    white-space: nowrap;
+  }
+  .cat-checklist    { background: #7c6aff22; color: #a89aff; border: 1px solid #7c6aff44; }
+  .cat-missing      { background: #ff4d6d22; color: #ff8099; border: 1px solid #ff4d6d44; }
+  .cat-tag          { background: #ff6a0022; color: #ffaa55; border: 1px solid #ff6a0044; }
+  .cat-number       { background: #ffbe0b22; color: #ffd466; border: 1px solid #ffbe0b44; }
+  .cat-punct        { background: #06d6a022; color: #4defc0; border: 1px solid #06d6a044; }
+  .cat-spaces       { background: #6affb822; color: #80ffcc; border: 1px solid #6affb844; }
+  .cat-inconsistent { background: #ff6a8a22; color: #ffaabc; border: 1px solid #ff6a8a44; }
+  .cat-default      { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+
+  /* HIGHLIGHT in cells */
+  .hl { background: rgba(255,77,109,.25); color: #ffaabc; border-radius: 2px; padding: 0 2px; font-weight: 600; }
+  .hl-diff { background: rgba(255,190,11,.22); color: #ffd466; border-radius: 2px; padding: 0 2px; font-weight: 600; }
+
+  /* EMPTY STATE */
+  .empty-state {
+    padding: 60px 24px; text-align: center;
+    color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 13px;
+  }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; display: block; }
+
+  /* COL RESIZE */
+  .col-resizer {
+    position: absolute; right: 0; top: 0; bottom: 0;
+    width: 5px; cursor: col-resize;
+    background: transparent; z-index: 1;
+  }
+  .col-resizer:hover, .col-resizer.active { background: var(--accent); }
+  thead th { position: relative; }
+
+  /* RESIZE HANDLE */
+  .resize-handle {
+    width: 100%; height: 6px; cursor: ns-resize;
+    background: var(--border); border-radius: 0 0 10px 10px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s; user-select: none;
+  }
+  .resize-handle:hover { background: var(--accent); }
+  button[data-key]:focus {
+    outline: 2px solid #4f9eff;
+    outline-offset: 2px;
+  }
+  .resize-handle::after {
+    content: ''; display: block;
+    width: 32px; height: 2px;
+    background: var(--muted); border-radius: 2px;
+  }
+  .resize-handle:hover::after { background: #fff; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--surface2); border-radius: 6px; }
+  ::-webkit-scrollbar-thumb { background: #3d4a6b; border-radius: 6px; border: 2px solid var(--surface2); }
+  ::-webkit-scrollbar-thumb:hover { background: #5566aa; }
+  * { scrollbar-width: thin; scrollbar-color: #3d4a6b var(--surface2); }
+
+  /* FOOTER */
+  footer {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--bg); border-top: 1px solid var(--border);
+    padding: 10px 24px; display: flex; align-items: center; gap: 12px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted);
+    z-index: 100;
+  }
+  .footer-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+  .footer-dot.green { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <header style="flex-direction:column;align-items:center;gap:10px;">
+    <div style="text-align:center;">
+      <h1>Shopify MS QA Checker</h1>
+      <p style="font-size:16px;color:var(--text);font-style:italic;margin-top:6px;line-height:1;font-family:'Inter',sans-serif;font-weight:300;white-space:nowrap;">
+        ⚠ Please make the changes directly on Smartling.
+      </p>
+    </div>
+    <div style="width:100%;display:flex;justify-content:space-between;align-items:flex-end;">
+      <p style="font-size:13px;color:var(--text);font-family:'Inter',sans-serif;font-weight:300;font-style:italic;line-height:1;opacity:0.75;white-space:nowrap;">
+        This QA checker is an assistive tool for final spot checks and is <strong style="font-weight:700;color:var(--text);">not intended to replace human proofreading steps.</strong>
+      </p>
+      <div style="text-align:right;display:flex;flex-direction:column;gap:3px;flex-shrink:0;">
+        <span class="copyright-badge">© ohhuiping@outlook.com</span>
+        <span class="copyright-badge">Last updated: 04 May 2025</span>
+        <span class="copyright-badge" style="color:var(--accent);font-weight:700;letter-spacing:.3px;">FOR INTERNAL USE ONLY</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- UPLOAD -->
+  <div class="upload-grid">
+    <div class="drop-zone" id="drop-trans" ondragover="onDrag(event,this)" ondragleave="offDrag(this)" ondrop="onDrop(event,'trans')" style="align-items:stretch;padding:14px 16px;gap:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:18px;">📄</span>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text);">Translation File(s)</div>
+            <div style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;">.xlsx · .xls · .csv</div>
+          </div>
+        </div>
+        <button onclick="document.getElementById('trans-input').click();event.stopPropagation();"
+          style="padding:5px 12px;background:var(--accent);border:none;border-radius:6px;color:#fff;
+          font-family:'Inter',sans-serif;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">
+          + Add Files
+        </button>
+      </div>
+      <input type="file" id="trans-input" accept=".xlsx,.xls,.csv" multiple onchange="onFile(event,'trans')" style="display:none;"/>
+      <div id="trans-file-list" style="width:100%;display:flex;flex-direction:column;gap:4px;min-height:32px;">
+        <div style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;padding:6px 0;text-align:center;">
+          Drop files here or click + Add Files
+        </div>
+      </div>
+    </div>
+    <div class="drop-zone" id="drop-check-panel" ondragover="onDrag(event,this)" ondragleave="offDrag(this)" ondrop="onDrop(event,'check')" style="align-items:stretch;padding:14px 16px;gap:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:18px;">✅</span>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text);">Checklist File</div>
+            <div style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;">.xlsx · .xls · .csv · optional</div>
+          </div>
+        </div>
+        <button onclick="document.getElementById('check-input').click();event.stopPropagation();"
+          style="padding:5px 12px;background:var(--accent);border:none;border-radius:6px;color:#fff;
+          font-family:'Inter',sans-serif;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">
+          + Add File
+        </button>
+      </div>
+      <input type="file" id="check-input" accept=".xlsx,.xls,.csv" onchange="onFile(event,'check')" style="display:none;"/>
+      <div id="check-file-list" style="width:100%;display:flex;flex-direction:column;gap:4px;min-height:32px;">
+        <div style="font-size:11px;color:var(--muted);padding:6px 0;text-align:center;">
+          Drop file here or click + Add File
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTIONS -->
+  <div class="options-bar">
+    <span class="options-title">Checks:</span>
+    <label><input type="checkbox" id="chk-missing" checked/> Missing Translation</label>
+    <label><input type="checkbox" id="chk-tags" checked/> Tags</label>
+    <label><input type="checkbox" id="chk-numbers" checked/> Numbers</label>
+    <label><input type="checkbox" id="chk-punct" checked/> Punctuation</label>
+    <label><input type="checkbox" id="chk-spaces" checked/> Spaces</label>
+    <label><input type="checkbox" id="chk-inconsist" checked/> Inconsistency</label>
+    <label><input type="checkbox" id="chk-grammar" checked/> Checklist</label>
+  </div>
+
+  <button class="run-btn" id="run-btn" onclick="runQA()">
+    <span>▶</span> Run QA Check
+  </button>
+
+
+  <!-- SUMMARY -->
+  <div id="summary-area">
+    <div class="summary-cards" id="summary-cards"></div>
+    <div class="export-bar">
+      <button class="export-btn primary" onclick="exportExcel()">⬇ Download Excel Report</button>
+      <button class="export-btn" onclick="exportCSV()">⬇ Download CSV</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results-area">
+    <div class="tab-bar" id="tab-bar"></div>
+    <div id="prep-subtab-bar" style="display:none;padding:8px 16px;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px;"></div>
+    <div id="checklist-subtab-bar" style="display:none;padding:8px 16px;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px;"></div>
+    <div class="table-wrap">
+      <div id="spaces-disclaimer" style="display:none;padding:12px 16px;background:#fff9e618;border-bottom:1px solid #ffbe0b44;">
+        <div style="font-size:13px;font-weight:700;color:#ffd466;margin-bottom:2px;">⚠ Error may be False Positive due to placeholder</div>
+        <div style="font-size:12px;color:var(--text);font-style:italic;font-family:'Inter',sans-serif;">Please check accordingly.</div>
+      </div>
+      <div class="table-search" style="flex-direction:column;align-items:stretch;gap:8px;">
+        <div style="display:flex;gap:10px;align-items:center;">
+          <div style="position:relative;flex:1;">
+            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none;">⌕</span>
+            <input type="text" id="search-box" placeholder="Search issues…" oninput="filterTable()"
+              style="width:100%;padding-left:30px;"/>
+          </div>
+          <span id="row-count" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);white-space:nowrap;"></span>
+          <button id="toggle-ignored-btn" onclick="toggleShowIgnored()" style="display:none;padding:5px 12px;background:transparent;border:1.5px solid var(--border);border-radius:20px;color:var(--muted);font-family:'Inter',sans-serif;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s;">Show Ignored</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button id="btn-case" onclick="toggleSearchOpt('case')"
+            style="padding:3px 10px;background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-family:'Inter',sans-serif;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .15s;">Match Case</button>
+          <button id="btn-whole" onclick="toggleSearchOpt('whole')"
+            style="padding:3px 10px;background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-family:'Inter',sans-serif;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .15s;">Match Word</button>
+          <div style="width:1px;background:var(--border);margin:0 2px;"></div>
+          <button id="btn-scope-all" onclick="setSearchScope('all')"
+            style="padding:3px 10px;background:#4f9eff15;border:1px solid #4f9eff;border-radius:4px;color:#4f9eff;font-family:'Inter',sans-serif;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .15s;">All</button>
+          <button id="btn-scope-src" onclick="setSearchScope('source')"
+            style="padding:3px 10px;background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-family:'Inter',sans-serif;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .15s;">Source Only</button>
+          <button id="btn-scope-tgt" onclick="setSearchScope('target')"
+            style="padding:3px 10px;background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-family:'Inter',sans-serif;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .15s;">Target Only</button>
+          <button id="btn-scope-err" onclick="setSearchScope('error')"
+            style="padding:3px 10px;background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-family:'Inter',sans-serif;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .15s;">Errors Only</button>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table id="issue-table">
+          <thead>
+            <tr>
+              <th class="col-seg">Seg ID</th>
+              <th class="col-src">Source</th>
+              <th class="col-tgt">Target</th>
+              <th class="col-detail">Errors</th>
+              <th style="width:0;"></th>
+            </tr>
+          </thead>
+          <tbody id="issue-body"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="resize-handle" id="resize-handle" title="Drag to resize"></div>
+  </div>
+
+</div>
+
+<footer>
+  <span class="footer-dot" id="status-dot"></span>
+  <span id="status-text">Ready — load a file to begin</span>
+</footer>
+
+<script>
+
+// ─── EMBEDDED CHECKLIST ────────────────────────────────────────────────────────
+const EMBEDDED_B64 = '';
+const EMBEDDED_FILENAME = '_Shopify_Checklist_MS_Excel.xlsx';
+let checklistUnlocked = true;
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let transFiles = [], checkFile = null;
+let allIssues = [], tabGroups = {}, activeTab = 'All Issues';
+let ignoredKeys = new Set();
+let showIgnored = false;
+let searchCase = false;
+let searchWhole = false;
+let searchScope = 'all'; // 'all' | 'source' | 'target'
+let activeFilter = null;
+let _lastTotalSegs = 0, _lastTotalRules = 0;
+let activePrepSubTab = null;
+let activeChecklistSubTab = null;
+
+// ─── TRANS FILE LIST ──────────────────────────────────────────────────────────
+function renderTransFileList() {
+  const list = document.getElementById('trans-file-list');
+  if (!list) return;
+  if (!transFiles.length) {
+    list.innerHTML = "<div style=\"font-size:11px;color:var(--muted);padding:6px 0;text-align:center;\">Drop files here or click + Add Files</div>";
+    document.getElementById('drop-trans').classList.remove('has-file');
+    return;
+  }
+  list.innerHTML = transFiles.map((f, i) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;
+      background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+      padding:5px 10px;gap:8px;">
+      <span style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text);
+        overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;"
+        title="${f.name}">📄 ${f.name}</span>
+      <button onclick="removeTransFile(${i})" title="Remove"
+        style="border:none;background:transparent;color:var(--muted);cursor:pointer;
+        font-size:13px;font-weight:700;padding:0 2px;flex-shrink:0;line-height:1;"
+        onmouseover="this.style.color='#c9607a'" onmouseout="this.style.color='var(--muted)'">✕</button>
+    </div>`).join('');
+}
+
+function removeTransFile(idx) {
+  transFiles = transFiles.filter((_, i) => i !== idx);
+  renderTransFileList();
+  setStatus(transFiles.length ? `${transFiles.length} translation file(s) loaded` : 'Ready', false);
+}
+
+function renderCheckFileList() {
+  const list = document.getElementById('check-file-list');
+  if (!list) return;
+  if (!checkFile) {
+    list.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:6px 0;text-align:center;">Drop file here or click + Add File</div>';
+    document.getElementById('drop-check-panel').classList.remove('has-file');
+    return;
+  }
+  list.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;
+      background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+      padding:5px 10px;gap:8px;">
+      <span style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text);
+        overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;"
+        title="${checkFile.name}">✅ ${checkFile.name}</span>
+      <button onclick="removeCheckFile()" title="Remove"
+        style="border:none;background:transparent;color:var(--muted);cursor:pointer;
+        font-size:13px;font-weight:700;padding:0 2px;flex-shrink:0;line-height:1;"
+        onmouseover="this.style.color='#c9607a'" onmouseout="this.style.color='var(--muted)'">✕</button>
+    </div>`;
+}
+
+function removeCheckFile() {
+  checkFile = null;
+  renderCheckFileList();
+  setStatus('Checklist removed', false);
+}
+
+// ─── FILE HANDLING ────────────────────────────────────────────────────────────
+function onDrag(e, el) { e.preventDefault(); el.classList.add('drag-over'); }
+function offDrag(el) { el.classList.remove('drag-over'); }
+function onDrop(e, which) {
+  e.preventDefault();
+  const el = document.getElementById(which === 'check' ? 'drop-check-panel' : 'drop-' + which);
+  offDrag(el);
+  const files = [...e.dataTransfer.files].filter(f => /\.(xlsx|xls|csv)$/i.test(f.name));
+  if (files.length) setFile(files, which);
+  else if (e.dataTransfer.files.length) alert('Please drop .xlsx, .xls or .csv files only.');
+}
+function onFile(e, which) {
+  const files = [...e.target.files];
+  if (files.length) setFile(files, which);
+}
+function setFile(files, which) {
+  if (which === 'trans') {
+    // Merge with existing files (avoid duplicates by name)
+    const existing = transFiles || [];
+    const newFiles = files.filter(f => !existing.some(e => e.name === f.name));
+    transFiles = [...existing, ...newFiles];
+    renderTransFileList();
+    document.getElementById('drop-trans').classList.add('has-file');
+    setStatus(`${transFiles.length} translation file(s) loaded`, false);
+  } else {
+    checkFile = files[0];
+    renderCheckFileList();
+    document.getElementById('drop-check-panel').classList.add('has-file');
+    setStatus(`Checklist file: ${files[0].name}`, false);
+  }
+}
+
+// ─── RESIZE PANE ──────────────────────────────────────────────────────────────
+(function() {
+  let dragging = false, startY = 0, startH = 0;
+  const getScroll = () => document.querySelector('.table-scroll');
+  document.addEventListener('DOMContentLoaded', () => {
+    const handle = document.getElementById('resize-handle');
+    if (!handle) return;
+    handle.addEventListener('mousedown', e => {
+      dragging = true; startY = e.clientY;
+      const sc = getScroll();
+      startH = sc ? sc.getBoundingClientRect().height : 600;
+      document.body.style.cursor = 'ns-resize';
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const delta = e.clientY - startY;
+      const newH = Math.max(200, Math.min(window.innerHeight - 200, startH + delta));
+      document.documentElement.style.setProperty('--pane-height', newH + 'px');
+    });
+    document.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    });
+    // Touch support
+    handle.addEventListener('touchstart', e => {
+      dragging = true; startY = e.touches[0].clientY;
+      const sc = getScroll();
+      startH = sc ? sc.getBoundingClientRect().height : 600;
+      e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('touchmove', e => {
+      if (!dragging) return;
+      const delta = e.touches[0].clientY - startY;
+      const newH = Math.max(200, Math.min(window.innerHeight - 200, startH + delta));
+      document.documentElement.style.setProperty('--pane-height', newH + 'px');
+    });
+    document.addEventListener('touchend', () => { dragging = false; });
+  });
+})();
+
+// ─── COLUMN RESIZE ────────────────────────────────────────────────────────────
+(function() {
+  let dragging = false, th = null, startX = 0, startW = 0, resizer = null;
+
+  function initColResize() {
+    const ths = document.querySelectorAll('#issue-table thead th');
+    ths.forEach(t => {
+      // Remove old resizer if any
+      const old = t.querySelector('.col-resizer');
+      if (old) old.remove();
+      // Don't add to last column (ignore button)
+      if (t === ths[ths.length - 1]) return;
+      const r = document.createElement('div');
+      r.className = 'col-resizer';
+      t.appendChild(r);
+      r.addEventListener('mousedown', e => {
+        dragging = true; th = t; resizer = r;
+        startX = e.clientX;
+        startW = t.getBoundingClientRect().width;
+        r.classList.add('active');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault(); e.stopPropagation();
+      });
+    });
+  }
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging || !th) return;
+    const newW = Math.max(60, startW + (e.clientX - startX));
+    th.style.width = newW + 'px';
+    th.style.minWidth = newW + 'px';
+    th.style.maxWidth = newW + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    if (resizer) resizer.classList.remove('active');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    th = null; resizer = null;
+  });
+
+  // Re-init after each table render
+  const origRender = window._origRenderTable;
+  const observer = new MutationObserver(() => initColResize());
+  document.addEventListener('DOMContentLoaded', () => {
+    const tbody = document.getElementById('issue-body');
+    if (tbody) observer.observe(tbody, { childList: true });
+    initColResize();
+  });
+})();
+
+// ─── STATUS ────────────────────────────────────────────────────────────────────
+function setStatus(msg, busy) {
+  document.getElementById('status-text').textContent = msg;
+  document.getElementById('status-dot').className = 'footer-dot' + (busy ? '' : ' green');
+}
+
+// ─── READ FILE → WORKBOOK ─────────────────────────────────────────────────────
+function readWorkbook(file) {
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'array', cellText: true, cellDates: true });
+        res(wb);
+      } catch(err) { rej(err); }
+    };
+    reader.onerror = rej;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// ─── PARSE TRANSLATION FILE ───────────────────────────────────────────────────
+function parseTranslation(wb) {
+  const segments = [];
+  const SRC = 'source text', TGT = 'translation text';
+  for (const sheetName of wb.SheetNames) {
+    const ws = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+    if (rows.length < 2) continue;
+    const hdrs = rows[0].map(h => String(h).trim().toLowerCase());
+    const si = hdrs.indexOf(SRC), ti = hdrs.indexOf(TGT);
+    if (si < 0 || ti < 0) { continue; }
+    for (let i = 1; i < rows.length; i++) {
+      const src = String(rows[i][si] ?? '').trim();
+      const tgt = String(rows[i][ti] ?? '').trim();
+      if (src || tgt) segments.push({ segId: `${sheetName}!R${i+1}`, src, tgt });
+    }
+  }
+  return segments;
+}
+
+function parseTranslationCSV(text) {
+  const wb = XLSX.read(text, { type: 'string' });
+  return parseTranslation(wb);
+}
+
+// ─── PARSE CHECKLIST ──────────────────────────────────────────────────────────
+function parseChecklist(wb) {
+  const rules = [];
+  for (const sheetName of wb.SheetNames) {
+    const ws = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+    const tabRules = parseChecklistRows(rows, sheetName);
+    rules.push(...tabRules);
+  }
+  return rules;
+}
+
+function parseChecklistRows(rows, tabName) {
+  const rules = [];
+  const TAB_REMAP = { 'Main Preposition': '(Optional Check) Preposition' };
+  tabName = TAB_REMAP[tabName] || tabName;
+  for (const row of rows) {
+    const cell = k => String(row[k] ?? '').trim();
+    const cellRaw = k => String(row[k] ?? '');  // preserve spaces for term fields
+    const name  = cell('Check Name');
+    const src   = cellRaw('Source Term');
+    const tgt   = cellRaw('Target Term');
+    const desc  = cell('Description');
+    const caseSens = cell('Case Check').toLowerCase() === 'yes';
+    const whole    = cell('Whole Word').toLowerCase() === 'yes';
+    const withoutV = cell('Without').toLowerCase();
+    const without  = withoutV === 'yes' || withoutV === 'without';
+    const exclRaw  = cell('Exclusion List');
+    const exclusions = exclRaw ? exclRaw.split(/[,;]/).map(s=>s.trim()).filter(Boolean) : [];
+    const pairRaw  = cell('Pair Term');
+    const pairTerms = pairRaw ? pairRaw.split(/[,;]/).map(s=>s.trim()).filter(Boolean) : [];
+    const ctxRaw   = cell('Context Term');
+    const contextTerms = ctxRaw ? ctxRaw.split(/[,;]/).map(s=>s.trim()).filter(Boolean) : [];
+    if (tgt === '#NAME?' || (!src && !tgt)) continue;
+    const srcIsRegex = /[\^\$\[\]\\]|\.\*n|\[.-.]/.test(src);
+    const tgtIsRegex = /[\^\$\[\]\\]|\.\*|\.\*n|\[.-.]/.test(tgt);
+    const tgtNeg = tgt.startsWith('-');
+    const tgtClean = tgtNeg ? tgt.slice(1).replace(/^"|"$/g,'') : tgt.replace(/^"|"$/g,'');
+    let ruleType, srcForDnt;
+    if (pairTerms.length) { ruleType = 'PAIR'; srcForDnt = tgtClean; }
+    else if (!src) { ruleType = isDNT(tgtClean, desc) ? 'A_DNT' : 'A_BAD'; srcForDnt = tgtClean; }
+    else { ruleType = tgtNeg ? 'B_MISS' : 'B_BAD'; srcForDnt = src; }
+    rules.push({ name, ruleType, srcRaw: src, srcForDnt, tgtClean, tgtNeg, desc, caseSens, whole, without,
+      srcIsRegex, tgtIsRegex: tgtIsRegex || /\[.+\]/.test(tgtClean),
+      exclusions, pairTerms, contextTerms, sourceTab: tabName || '' });
+  }
+  return rules;
+}
+
+function isDNT(tgt, desc) {
+  const d = desc.toLowerCase();
+  return d.includes('dnt') || d.includes('do not translate') || d.includes('game name') ||
+         d.includes('feature name') || d.includes('is dnt');
+}
+
+// ─── REGEX HELPERS ────────────────────────────────────────────────────────────
+function posixToPython(p) {
+  return p.replace('[[:punct:]]','[.,!?:;\"\\-()\[\\]{}]').replace('[:punct:]','.,!?:;\"\\-()[]{}')
+          .replace('[[:alpha:]]','[A-Za-z]').replace('[:alpha:]','A-Za-z')
+          .replace('[[:digit:]]','[0-9]').replace('[:digit:]','0-9')
+          .replace('[[:symbol:]]','[&*#%!@^~]').replace('[:symbol:]','&*#%!@^~');
+}
+function safeRegex(pat, flags) {
+  try { return new RegExp(pat, flags); } catch(e) { return null; }
+}
+function matchTerm(text, term, isRegex, whole, caseSens) {
+  const fl = caseSens ? '' : 'i';
+  if (isRegex) { const r = safeRegex(posixToPython(term), fl); return r && r.test(text); }
+  let p = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (whole) {
+    // Only add boundary on sides that don't already have a space
+    const leadBound = term[0] === ' ' ? '' : '(?<![a-zA-Z0-9])';
+    const trailBound = term[term.length-1] === ' ' ? '' : '(?![a-zA-Z0-9])';
+    p = leadBound + p + trailBound;
+  }
+  const r = safeRegex(p, fl); return r && r.test(text);
+}
+
+function parseXbenchTgt(raw) {
+  const t = raw.trim();
+  if (t.includes('" or "')) {
+    const parts = t.split('" or "').map(x=>x.trim().replace(/^"|"$/g,''));
+    return [{ terms: parts, logic: 'OR', negate: false }];
+  }
+  if (t.includes('" -"')) {
+    const halves = t.split('" -"', 2);
+    const specs = [];
+    const pos = halves[0].trim().replace(/^"|"$/g,'');
+    const neg = halves[1]?.trim().replace(/^"|"$/g,'') || '';
+    if (pos) specs.push({ terms:[pos], logic:'AND', negate:false });
+    if (neg) specs.push({ terms:[neg], logic:'AND', negate:true });
+    return specs.length ? specs : [{ terms:[t.replace(/^"|"$/g,'')], logic:'PLAIN', negate:false }];
+  }
+  if (t.includes('" "')) {
+    const parts = t.split('" "').map(x=>x.trim().replace(/^"|"$/g,''));
+    return [{ terms: parts, logic: 'AND', negate: false }];
+  }
+  const rm = t.match(/^<"(.+?)">\s*(.*)/);
+  if (rm) { const pat = rm[1] + (rm[2]||''); return [{ terms:[pat], logic:'REGEX', negate:false }]; }
+  return [{ terms:[t.replace(/^"|"$/g,'')], logic:'PLAIN', negate:false }];
+}
+
+function xbenchMatch(text, rawTgt, isRegex, whole, caseSens) {
+  const fl = caseSens ? '' : 'i';
+  const XB = ['" "','" or "','" -"','<"'];
+  if (isRegex && !XB.some(s=>rawTgt.includes(s))) {
+    const r = safeRegex(posixToPython(rawTgt), fl); return r && r.test(text);
+  }
+  const specs = parseXbenchTgt(rawTgt);
+  function findTerm(term, asRe=false) {
+    if (asRe) { const r = safeRegex(posixToPython(term), fl); return r && r.test(text); }
+    let p = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (whole) p = '(?<![a-zA-Z])' + p + '(?![a-zA-Z])';
+    const r = safeRegex(p, fl); return r && r.test(text);
+  }
+  for (const spec of specs) {
+    let found;
+    if (spec.logic === 'REGEX') found = findTerm(spec.terms[0], true);
+    else if (spec.logic === 'OR') found = spec.terms.some(t=>findTerm(t));
+    else found = spec.terms.every(t=>findTerm(t));
+    if (spec.negate && found) return false;
+    if (!spec.negate && !found) return false;
+  }
+  return true;
+}
+
+function fuzzyMisspelling(text, term, threshold=0.70, caseSens=false) {
+  const tLower = term.toLowerCase();
+  const tokens = [...text.matchAll(/\b\w+\b/g)].map(m=>m[0]);
+  for (const tok of tokens) {
+    const tl = tok.toLowerCase();
+    if (Math.abs(tok.length - term.length) > Math.max(2, Math.floor(term.length * (1-threshold)) + 1)) continue;
+    if (tl === tLower) {
+      if (caseSens && tok !== term) return tok;
+      continue;
+    }
+    if (seqRatio(tLower, tl) >= threshold) return tok;
+  }
+  return null;
+}
+
+function seqRatio(a, b) {
+  // Simple LCS-based ratio similar to SequenceMatcher
+  const m = a.length, n = b.length;
+  if (!m || !n) return 0;
+  const dp = Array.from({length: m+1}, ()=>new Array(n+1).fill(0));
+  let mx = 0;
+  for (let i=1;i<=m;i++) for(let j=1;j<=n;j++) {
+    dp[i][j] = a[i-1]===b[j-1] ? dp[i-1][j-1]+1 : Math.max(dp[i-1][j],dp[i][j-1]);
+    mx = Math.max(mx, dp[i][j]);
+  }
+  return (2*mx)/(m+n);
+}
+
+function extractTermForms(text, term, whole) {
+  let p = term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  if (whole) p = '(?<![a-zA-Z])'+p+'(?![a-zA-Z])';
+  const re = new RegExp(p, 'gi');
+  return [...text.matchAll(re)].map(m=>m[0]);
+}
+
+// ─── QA CHECKS ───────────────────────────────────────────────────────────────
+function checkMissing(seg) {
+  if (seg.src && !seg.tgt)
+    return [issue(seg,'Missing/Empty Translation','Target is empty','','_missing')];
+  return [];
+}
+
+function checkTags(seg) {
+  const st = (seg.src.match(/<[^>]+>/g)||[]);
+  const tt = (seg.tgt.match(/<[^>]+>/g)||[]);
+  if (JSON.stringify(st)===JSON.stringify(tt)) return [];
+  const missing = st.filter(t=>!tt.includes(t));
+  const extra   = tt.filter(t=>!st.includes(t));
+  const parts = [];
+  if (missing.length) parts.push('Missing: '+missing.join(', '));
+  if (extra.length)   parts.push('Extra: '+extra.join(', '));
+  if (!parts.length)  parts.push('Tag order differs');
+  return [issue(seg,'Tag Mismatch',parts.join('; '),extra[0]||tt[0]||'','_tag')];
+}
+
+function checkNumbers(seg) {
+  if (!seg.tgt) return [];
+  const sn = new Set((seg.src.match(/\b\d[\d,.]*\b/g)||[]));
+  const tn = new Set((seg.tgt.match(/\b\d[\d,.]*\b/g)||[]));
+  const miss = [...sn].filter(n=>!tn.has(n));
+  if (miss.length)
+    return [issue(seg,'Number Mismatch','Numbers missing in target: '+miss.join(', '),'','_number')];
+  return [];
+}
+
+function checkPunctuation(seg) {
+  if (!seg.tgt) return [];
+  const terminal = new Set([',','.','!','?',':',';']);
+  const se = seg.src.trimEnd().slice(-1);
+  const te = seg.tgt.trimEnd().slice(-1);
+  const issues = [];
+  if (terminal.has(se) && !terminal.has(te))
+    issues.push(issue(seg,'Punctuation/Spacing',`Source ends '${se}' but target does not`,'','_punct'));
+  else if (!terminal.has(se) && terminal.has(te))
+    issues.push(issue(seg,'Punctuation/Spacing',`Target has extra trailing punctuation '${te}'`,te,'_punct'));
+  if (seg.src.startsWith(' ')!==seg.tgt.startsWith(' '))
+    issues.push(issue(seg,'Punctuation/Spacing','Leading space mismatch','','_punct'));
+  if (seg.src.endsWith(' ')!==seg.tgt.endsWith(' '))
+    issues.push(issue(seg,'Punctuation/Spacing','Trailing space mismatch','','_punct'));
+  return issues;
+}
+
+function checkSpaces(seg) {
+  if (!seg.tgt) return [];
+  const issues = [];
+  if (seg.tgt.includes('  '))
+    issues.push(issue(seg,'(Placeholder) Multiple Spacing','Double/multiple consecutive spaces in target','  ','_spaces'));
+  if (seg.tgt !== seg.tgt.trim() && seg.src === seg.src.trim())
+    issues.push(issue(seg,'(Placeholder) Multiple Spacing','Leading or trailing spaces in target','','_spaces'));
+  return issues;
+}
+
+// Diff two strings at word level — returns html with <span class="hl"> on differing words
+function diffHighlight(a, b) {
+  const wa = a.split(/(\s+)/), wb = b.split(/(\s+)/);
+  // Build a set of words in the other string for quick lookup
+  const setA = new Set(wa.filter((_,i)=>i%2===0).map(w=>w.toLowerCase()));
+  const setB = new Set(wb.filter((_,i)=>i%2===0).map(w=>w.toLowerCase()));
+  const renderWords = (words, otherSet) =>
+    words.map((tok, i) => {
+      if (i % 2 !== 0) return escHtml(tok); // whitespace
+      const differs = !otherSet.has(tok.toLowerCase());
+      return differs
+        ? `<span class="hl-diff">${escHtml(tok)}</span>`
+        : escHtml(tok);
+    }).join('');
+  return {
+    a: renderWords(wa, setB),
+    b: renderWords(wb, setA)
+  };
+}
+
+function checkInconsistency(segments) {
+  const map = {};
+  for (const s of segments) {
+    if (!s.src || !s.tgt) continue;
+    if (!map[s.src]) map[s.src] = [];
+    map[s.src].push({ segId: s.segId, tgt: s.tgt });
+  }
+  const issues = [];
+  for (const [src, entries] of Object.entries(map)) {
+    const tgtMap = {};
+    for (const e of entries) {
+      if (!tgtMap[e.tgt]) tgtMap[e.tgt] = [];
+      tgtMap[e.tgt].push(e.segId);
+    }
+    if (Object.keys(tgtMap).length < 2) continue;
+    const variants = Object.keys(tgtMap);
+    const allIds = Object.values(tgtMap).flat();
+    const dispIds = allIds.slice(0,6).join(', ')+(allIds.length>6?` (+${allIds.length-6} more)`:'');
+    // Store variants array for diff rendering
+    issues.push({
+      segId: dispIds, category: 'Inconsistent Translation',
+      src, tgt: variants.join(' | '),
+      detail: `${variants.length} variants`,
+      flagTerm: '', sheetGroup: 'Inconsistent Translation',
+      _variants: variants, _tgtMap: tgtMap
+    });
+  }
+  return issues;
+}
+
+function checkGrammar(seg, rules) {
+  if (!seg.tgt || !rules.length) return [];
+  const issues = [];
+  for (const rule of rules) {
+    const { ruleType, tgtClean, caseSens, whole, without, srcRaw, srcForDnt,
+            srcIsRegex, tgtIsRegex, exclusions, pairTerms, contextTerms, sourceTab, name, desc } = rule;
+    if (!tgtClean) continue;
+
+    const isExcluded = () => exclusions.some(ph => seg.tgt.toLowerCase().includes(ph.toLowerCase()) || seg.src.toLowerCase().includes(ph.toLowerCase()));
+    const tab = sourceTab || '';
+    const sheetGroup = 'Checklist';
+    const cat = tab || sheetGroup;
+
+    const mkIssue = (detail, flagTerm=tgtClean) => ({
+      segId: seg.segId, category: cat, src: seg.src, tgt: seg.tgt,
+      detail: detail || `[${name}] ${desc}`, flagTerm, sheetGroup,
+      srcTerm: (srcRaw || '').trim(),
+      _checkName: name || ''
+    });
+
+    if (ruleType === 'PAIR') {
+      if (isExcluded()) continue;
+      const ws = (t,text) => {
+        let p = t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+        if (whole) p='(?<![a-zA-Z])'+p+'(?![a-zA-Z])';
+        const r = safeRegex(p,'i'); return r&&r.test(text);
+      };
+      if (!ws(tgtClean, seg.tgt)) continue;
+      if (contextTerms.length && !contextTerms.some(c=>ws(c,seg.tgt))) continue;
+      if (!pairTerms.some(pt=>ws(pt,seg.tgt)))
+        issues.push(mkIssue(`[${name}] ${desc}`, tgtClean));
+
+    } else if (ruleType === 'A_BAD') {
+      if (without) continue;
+      if (xbenchMatch(seg.tgt, tgtClean, tgtIsRegex, whole, caseSens) && !isExcluded())
+        issues.push(mkIssue());
+
+    } else if (ruleType === 'A_DNT') {
+      if (without) {
+        if (!matchTerm(seg.src, srcForDnt, srcIsRegex, whole, caseSens)) continue;
+        if (xbenchMatch(seg.tgt, tgtClean, tgtIsRegex, whole, caseSens)) continue;
+        const mis = fuzzyMisspelling(seg.tgt, tgtClean, 0.70, caseSens);
+        if (!isExcluded()) issues.push(mis
+          ? mkIssue(`[${name}] Misspelling: '${mis}' → '${tgtClean}'. ${desc}`, mis)
+          : mkIssue(`[${name}] Term omitted: '${tgtClean}' expected. ${desc}`, ''));
+      } else {
+        if (!matchTerm(seg.src, srcForDnt, srcIsRegex, whole, caseSens)) continue;
+        if (xbenchMatch(seg.tgt, tgtClean, tgtIsRegex, whole, caseSens)) continue;
+        const mis = fuzzyMisspelling(seg.tgt, tgtClean, 0.70, caseSens);
+        if (!isExcluded()) issues.push(mis
+          ? mkIssue(`[${name}] Misspelling: '${mis}' → '${tgtClean}'. ${desc}`, mis)
+          : mkIssue(`[${name}] Term omitted: '${tgtClean}' expected. ${desc}`, ''));
+      }
+
+    } else if (ruleType === 'B_BAD') {
+      if (without) {
+        if (!matchTerm(seg.src, srcRaw, srcIsRegex, whole, caseSens)) continue;
+        const forms = extractTermForms(seg.src, srcRaw, whole);
+        for (const form of [...new Set(forms)]) {
+          const cnt = forms.filter(f=>f===form).length;
+          let p = form.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+          if (whole) p='(?<![a-zA-Z])'+p+'(?![a-zA-Z])';
+          const re = safeRegex(p); const tgtCnt = re ? (seg.tgt.match(new RegExp(p,'g'))||[]).length : 0;
+          if (tgtCnt >= cnt) continue;
+          const mis = fuzzyMisspelling(seg.tgt, form, 0.70, true);
+          if (!isExcluded()) issues.push(mis
+            ? mkIssue(`[${name}] Misspelling: '${mis}' → '${form}'. ${desc}`, mis)
+            : mkIssue(`[${name}] Term omitted: '${form}' expected. ${desc}`, ''));
+        }
+      } else {
+        if (!matchTerm(seg.src, srcRaw, srcIsRegex, whole, caseSens)) continue;
+        if (xbenchMatch(seg.tgt, tgtClean, tgtIsRegex, whole, true) && !isExcluded())
+          issues.push(mkIssue());
+      }
+
+    } else if (ruleType === 'B_MISS') {
+      if (!matchTerm(seg.src, srcRaw, srcIsRegex, whole, caseSens)) continue;
+      const exact = xbenchMatch(seg.tgt, tgtClean, tgtIsRegex, whole, true);
+      if (without && exact) continue;
+      if (!exact) {
+        const mis = fuzzyMisspelling(seg.tgt, tgtClean, 0.70, caseSens);
+        if (!isExcluded()) issues.push(mis
+          ? mkIssue(`[${name}] Misspelling: '${mis}' → '${tgtClean}'. ${desc}`, mis)
+          : mkIssue());
+      }
+    }
+  }
+  return issues;
+}
+
+function issue(seg, cat, detail, flagTerm, sheetGroup) {
+  return { segId: seg.segId, category: cat, src: seg.src, tgt: seg.tgt, detail, flagTerm, sheetGroup: sheetGroup||cat };
+}
+
+// ─── MAIN RUNNER ──────────────────────────────────────────────────────────────
+async function runQA() {
+  if (!transFiles.length) { alert('Please load a translation file first.'); return; }
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  document.getElementById('summary-area').style.display = 'none';
+  document.getElementById('results-area').style.display = 'none';
+  allIssues = []; tabGroups = {}; activeTab = 'All Issues';
+  ignoredKeys = new Set(); showIgnored = false;
+  activeFilter = null;
+  searchCase = false; searchWhole = false; searchScope = 'all';
+
+  // Reset search UI
+  const sb = document.getElementById('search-box');
+  if (sb) { sb.value = ''; }
+  const sc = document.getElementById('search-clear');
+  if (sc) sc.style.display = 'none';
+  const tigBtn = document.getElementById('toggle-ignored-btn');
+  if (tigBtn) { tigBtn.style.display = 'none'; tigBtn.textContent = 'Show Ignored'; }
+  // Reset search option buttons
+  ['btn-case','btn-whole'].forEach(id => {
+    const b = document.getElementById(id);
+    if (b) { b.style.borderColor='var(--border)'; b.style.color='var(--muted)'; b.style.background='transparent'; }
+  });
+  setSearchScope('all');
+
+  try {
+    setStatus('Reading files…', true);
+    const segments = [];
+    for (const tf of transFiles) {
+      const wb = await readWorkbook(tf);
+      const segs = parseTranslation(wb);
+      segments.push(...segs);
+    }
+
+    let rules = [];
+    if (checkFile) {
+        const checkWb = await readWorkbook(checkFile);
+      rules = parseChecklist(checkWb);
+      } else {
+        const binStr = atob(EMBEDDED_B64);
+      const bytes = new Uint8Array(binStr.length);
+      for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+      const embWb = XLSX.read(bytes.buffer, { type: 'array' });
+      rules = parseChecklist(embWb);
+      }
+
+    const checks = {
+      missing: document.getElementById('chk-missing').checked,
+      tags:    document.getElementById('chk-tags').checked,
+      numbers: document.getElementById('chk-numbers').checked,
+      punct:   document.getElementById('chk-punct').checked,
+      spaces:  document.getElementById('chk-spaces').checked,
+      inconsist: document.getElementById('chk-inconsist').checked,
+      grammar: document.getElementById('chk-grammar').checked && rules.length > 0,
+    };
+
+    for (const seg of segments) {
+      if (checks.missing)  allIssues.push(...checkMissing(seg));
+      if (checks.tags)     allIssues.push(...checkTags(seg));
+      if (checks.numbers)  allIssues.push(...checkNumbers(seg));
+      if (checks.punct)    allIssues.push(...checkPunctuation(seg));
+      if (checks.spaces)   allIssues.push(...checkSpaces(seg));
+      if (checks.grammar)  allIssues.push(...checkGrammar(seg, rules));
+    }
+    if (checks.inconsist) allIssues.push(...checkInconsistency(segments));
+
+    setStatus(`Done — ${allIssues.length} issues found`, false);
+
+    buildTabs();
+    _lastTotalSegs = segments.length; _lastTotalRules = rules.length;
+    renderSummary(segments.length, rules.length);
+    document.getElementById('summary-area').style.display = 'block';
+    document.getElementById('results-area').style.display = 'block';
+    switchTab('All Issues');
+
+  } catch(e) {
+    setStatus('Error — ' + e.message, false);
+    console.error(e);
+  }
+  btn.disabled = false;
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+function buildTabs() {
+  tabGroups = {};
+
+  // 1. All Issues — exclude (Optional Check) Preposition
+  tabGroups['All Issues'] = allIssues.filter(i=>i.category !== '(Optional Check) Preposition');
+
+  // 2. Inconsistent Translation
+  const inconsist = allIssues.filter(i=>i.category==='Inconsistent Translation');
+  if (inconsist.length) tabGroups['Inconsistent Translation'] = inconsist;
+
+  // 3. Checklist (all checklist issues except (Optional Check) Preposition)
+  const checklistIssues = allIssues.filter(i=>i.sheetGroup==='Checklist' && i.category!=='(Optional Check) Preposition');
+  if (checklistIssues.length) tabGroups['Checklist'] = checklistIssues;
+
+  // 4. Punctuation/Spacing
+  const punct = allIssues.filter(i=>i.category==='Punctuation/Spacing');
+  if (punct.length) tabGroups['Punctuation/Spacing'] = punct;
+
+  // 5. Number Mismatch
+  const numm = allIssues.filter(i=>i.category==='Number Mismatch');
+  if (numm.length) tabGroups['Number Mismatch'] = numm;
+
+  // 6. Double/Extra Spaces
+  const spaceIssues = allIssues.filter(i=>i.category==='(Placeholder) Multiple Spacing');
+  if (spaceIssues.length) tabGroups['(Placeholder) Multiple Spacing'] = spaceIssues;
+
+  // 7. (Optional Check) Preposition — last tab
+  const mainPrep = allIssues.filter(i=>i.category==='(Optional Check) Preposition');
+  if (mainPrep.length) tabGroups['(Optional Check) Preposition'] = mainPrep;
+
+  const bar = document.getElementById('tab-bar');
+  bar.innerHTML = '';
+  for (const [name, issues] of Object.entries(tabGroups)) {
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn';
+    btn.innerHTML = `${escHtml(name)}<span class="tab-count">${issues.length}</span>`;
+    btn.onclick = () => switchTab(name);
+    bar.appendChild(btn);
+  }
+}
+
+function switchTab(name) {
+  activeTab = name;
+  activePrepSubTab = null;
+  activeChecklistSubTab = null;
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>{
+    b.classList.toggle('active', Object.keys(tabGroups)[i]===name);
+  });
+  document.getElementById('search-box').value = '';
+  const sc = document.getElementById('search-clear');
+  if (sc) sc.style.display = 'none';
+  const disc = document.getElementById('spaces-disclaimer');
+  if (disc) disc.style.display = name === '(Placeholder) Multiple Spacing' ? 'block' : 'none';
+
+  const prepBar = document.getElementById('prep-subtab-bar');
+  const checklistBar = document.getElementById('checklist-subtab-bar');
+
+  if (name === '(Optional Check) Preposition') {
+    const issues = tabGroups['(Optional Check) Preposition'] || [];
+    const checkNames = [...new Set(issues.map(i => i._checkName).filter(Boolean))].sort();
+    prepBar.style.display = 'flex';
+    checklistBar.style.display = 'none';
+    renderPrepSubTabs(checkNames, issues);
+  } else if (name === 'Checklist') {
+    const issues = tabGroups['Checklist'] || [];
+    const cats = [...new Set(issues.map(i => i.category).filter(Boolean))].sort();
+    checklistBar.style.display = 'flex';
+    prepBar.style.display = 'none';
+    renderChecklistSubTabs(cats, issues);
+  } else {
+    prepBar.style.display = 'none';
+    checklistBar.style.display = 'none';
+  }
+  renderTable(tabGroups[name] || []);
+}
+
+function renderPrepSubTabs(checkNames, issues) {
+  const bar = document.getElementById('prep-subtab-bar');
+  if (!bar) return;
+  const allBtn = document.createElement('button');
+  allBtn.textContent = 'All (' + issues.length + ')';
+  allBtn.style.cssText = 'padding:3px 12px;border-radius:4px;border:1.5px solid ' +
+    (activePrepSubTab === null ? 'var(--accent)' : 'var(--border)') +
+    ';background:' + (activePrepSubTab === null ? 'var(--accent)22' : 'transparent') +
+    ';color:' + (activePrepSubTab === null ? 'var(--accent)' : 'var(--muted)') +
+    ';font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;margin:2px;';
+  allBtn.onclick = () => setPrepSubTab(null);
+  bar.innerHTML = '';
+  bar.appendChild(allBtn);
+  checkNames.forEach(cn => {
+    const count = issues.filter(i => i._checkName === cn).length;
+    const isActive = activePrepSubTab === cn;
+    const btn = document.createElement('button');
+    btn.textContent = cn + ' (' + count + ')';
+    btn.style.cssText = 'padding:3px 12px;border-radius:4px;border:1.5px solid ' +
+      (isActive ? 'var(--accent)' : 'var(--border)') +
+      ';background:' + (isActive ? 'var(--accent)22' : 'transparent') +
+      ';color:' + (isActive ? 'var(--accent)' : 'var(--muted)') +
+      ';font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;margin:2px;';
+    btn.onclick = () => setPrepSubTab(cn);
+    bar.appendChild(btn);
+  });
+}
+
+function setPrepSubTab(cn) {
+  activePrepSubTab = cn;
+  const issues = tabGroups['(Optional Check) Preposition'] || [];
+  const checkNames = [...new Set(issues.map(i => i._checkName).filter(Boolean))].sort();
+  renderPrepSubTabs(checkNames, issues);
+  const base = activePrepSubTab ? issues.filter(i => i._checkName === activePrepSubTab) : issues;
+  renderTable(base);
+}
+
+function renderChecklistSubTabs(cats, issues) {
+  const bar = document.getElementById('checklist-subtab-bar');
+  if (!bar) return;
+  bar.innerHTML = '';
+
+  const makeBtn = (label, count, isActive, onClick) => {
+    const btn = document.createElement('button');
+    btn.textContent = label + ' (' + count + ')';
+    btn.style.cssText = 'padding:3px 12px;border-radius:4px;border:1.5px solid ' +
+      (isActive ? 'var(--accent)' : 'var(--border)') +
+      ';background:' + (isActive ? 'var(--accent)22' : 'transparent') +
+      ';color:' + (isActive ? 'var(--accent)' : 'var(--muted)') +
+      ';font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;margin:2px;transition:all .15s;';
+    btn.onclick = onClick;
+    bar.appendChild(btn);
+  };
+
+  makeBtn('All', issues.length, activeChecklistSubTab === null, () => setChecklistSubTab(null));
+  cats.forEach(cat => {
+    const count = issues.filter(i => i.category === cat).length;
+    makeBtn(cat, count, activeChecklistSubTab === cat, () => setChecklistSubTab(cat));
+  });
+}
+
+function setChecklistSubTab(cat) {
+  activeChecklistSubTab = cat;
+  const issues = tabGroups['Checklist'] || [];
+  const cats = [...new Set(issues.map(i => i.category).filter(Boolean))].sort();
+  renderChecklistSubTabs(cats, issues);
+  const base = activeChecklistSubTab ? issues.filter(i => i.category === activeChecklistSubTab) : issues;
+  renderTable(base);
+}
+
+// ─── TABLE ─────────────────────────────────────────────────────────────────────
+function catClass(cat) {
+  if (!cat) return 'cat-default';
+  const cl = cat.toLowerCase();
+  if (cl.includes('missing')) return 'cat-missing';
+  if (cl.includes('tag')) return 'cat-tag';
+  if (cl.includes('number')) return 'cat-number';
+  if (cl.includes('punct')) return 'cat-punct';
+  if (cl.includes('space')) return 'cat-spaces';
+  if (cl.includes('inconsist')) return 'cat-inconsistent';
+  return 'cat-checklist';
+}
+
+function highlight(text, term) {
+  if (!term || !text) return escHtml(text);
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  // Use word boundaries so "ke" doesn't match inside "kedai", "kepada" etc.
+  // Fall back to plain match if boundary fails (e.g. term starts/ends with non-word char)
+  let re;
+  try { re = new RegExp('(?<![\\w])(' + escaped + ')(?![\\w])', 'gi'); }
+  catch(e) { re = new RegExp('(' + escaped + ')', 'gi'); }
+  return escHtml(text).replace(re, '<span class="hl">$1</span>');
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function issueKey(iss) {
+  return iss.segId + '|' + iss.category + '|' + iss.detail;
+}
+
+function toggleIgnore(key) {
+  // Find position of clicked button BEFORE re-render
+  const allBtns = [...document.querySelectorAll('#issue-body button[data-key]')]
+    .filter(b => !ignoredKeys.has(b.dataset.key));
+  const clickedIdx = allBtns.findIndex(b => b.dataset.key === key);
+
+  if (ignoredKeys.has(key)) ignoredKeys.delete(key);
+  else ignoredKeys.add(key);
+
+  const btn = document.getElementById('toggle-ignored-btn');
+  btn.style.display = ignoredKeys.size > 0 ? 'inline-flex' : 'none';
+  btn.textContent = showIgnored ? 'Hide Ignored' : `Show Ignored (${ignoredKeys.size})`;
+  btn.style.borderColor = '#4f9eff';
+  btn.style.color = '#4f9eff';
+  btn.style.background = '#4f9eff15';
+  filterTable();
+
+  // After re-render, focus the button at same position (or last if at end)
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const newBtns = [...document.querySelectorAll('#issue-body button[data-key]')]
+        .filter(b => !ignoredKeys.has(b.dataset.key));
+      if (newBtns.length > 0) {
+        const nextIdx = Math.min(clickedIdx, newBtns.length - 1);
+        const target = newBtns[nextIdx];
+        target.focus();
+        target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    });
+  });
+}
+
+function toggleShowIgnored() {
+  showIgnored = !showIgnored;
+  const btn = document.getElementById('toggle-ignored-btn');
+  btn.textContent = showIgnored ? 'Hide Ignored' : `Show Ignored (${ignoredKeys.size})`;
+  btn.style.borderColor = showIgnored ? '#4f9eff' : 'var(--border)';
+  btn.style.color = showIgnored ? '#4f9eff' : 'var(--muted)';
+  btn.style.background = showIgnored ? '#4f9eff18' : 'transparent';
+  filterTable();
+}
+
+function searchHighlight(text, q) {
+  if (!q || !text) return escHtml(text);
+  // Escape special chars, then allow flexible whitespace between words
+  const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+  let re;
+  try {
+    if (searchWhole) re = new RegExp('(?<![\\w])(' + escaped + ')(?![\\w])', searchCase ? 'g' : 'gi');
+    else re = new RegExp('(' + escaped + ')', searchCase ? 'g' : 'gi');
+  } catch(e) { return escHtml(text); }
+  return escHtml(text).replace(re, '<span class="hl-diff">$1</span>');
+}
+
+function renderTable(issues) {
+  const body = document.getElementById('issue-body');
+  const visible = showIgnored ? issues : issues.filter(i => !ignoredKeys.has(issueKey(i)));
+  const ignored = issues.filter(i => ignoredKeys.has(issueKey(i)));
+
+  if (!visible.length && !ignored.length) {
+    body.innerHTML = `<tr><td colspan="6"><div class="empty-state"><span class="empty-icon">✅</span>No issues found in this category</div></td></tr>`;
+    document.getElementById('row-count').textContent = '0 rows';
+    return;
+  }
+
+  const _q = document.getElementById('search-box').value;
+
+  // Group issues by segId+src+tgt — one row per segment
+  const groups = [];
+  const groupMap = {};
+  for (const iss of visible) {
+    const gkey = iss.segId + '||' + iss.src + '||' + iss.tgt;
+    if (!groupMap[gkey]) {
+      groupMap[gkey] = { segId: iss.segId, src: iss.src, tgt: iss.tgt, issues: [], gkey };
+      groups.push(groupMap[gkey]);
+    }
+    groupMap[gkey].issues.push(iss);
+  }
+
+  body.innerHTML = groups.map(grp => {
+    const allIgnored = grp.issues.every(i => ignoredKeys.has(issueKey(i)));
+    const anyIgnored = grp.issues.some(i => ignoredKeys.has(issueKey(i)));
+
+    // Build numbered error list
+    const detailHtml = grp.issues.map((iss, idx) => {
+      const isIgnored = ignoredKeys.has(issueKey(iss));
+      const key = issueKey(iss);
+      let detail;
+      if (iss._variants && iss._variants.length >= 2) {
+        detail = escHtml(iss.detail);
+      } else {
+        detail = searchHighlight(plainDetail(iss), _q);
+      }
+      const catBadge = `<span class="cat-badge ${catClass(iss.category)}" style="font-size:9px;padding:1px 6px;">${searchHighlight(iss.category, _q)}</span>`;
+      const ignBtn = `<button data-key="${escHtml(key)}" onclick="toggleIgnore(this.dataset.key)"
+        style="display:inline-flex;align-items:center;gap:3px;border:1px solid ${isIgnored?'var(--ok)':'#c9607a'};
+        background:${isIgnored?'#06d6a018':'#c9607a18'};color:${isIgnored?'var(--ok)':'#c9607a'};
+        cursor:pointer;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;
+        font-family:'Inter',sans-serif;white-space:nowrap;vertical-align:middle;"
+        onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
+        ${isIgnored?'↩':'✕'}
+      </button>`;
+      return `<div style="display:flex;align-items:flex-start;gap:6px;padding:4px 0;${isIgnored?'opacity:.4;':''};${idx>0?'border-top:1px solid var(--border)33;margin-top:4px;padding-top:6px;':''}">
+        <span style="font-size:11px;font-weight:700;color:var(--muted);min-width:16px;padding-top:1px;">${idx+1}.</span>
+        <div style="flex:1;display:flex;flex-direction:column;gap:3px;">
+          <div style="display:flex;align-items:center;gap:6px;">${ignBtn}${catBadge}</div>
+          <div style="font-size:12px;line-height:1.5;">${detail}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // tgt — use first issue for highlight, show diff if inconsistency
+    const firstIss = grp.issues[0];
+    let tgtHtml;
+    if (firstIss._variants && firstIss._variants.length >= 2) {
+      const d = diffHighlight(firstIss._variants[0], firstIss._variants[1]);
+      const ids0 = firstIss._tgtMap[firstIss._variants[0]].slice(0,3).join(', ');
+      const ids1 = firstIss._tgtMap[firstIss._variants[1]].slice(0,3).join(', ');
+      tgtHtml = `<div style="margin-bottom:6px;"><span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;">Seg ${escHtml(ids0)}</span><br>${d.a}</div>`
+               +`<div><span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;">Seg ${escHtml(ids1)}</span><br>${d.b}</div>`;
+    } else {
+      // Highlight all flagTerms from all issues in group
+      let tgt = escHtml(grp.tgt);
+      for (const iss of grp.issues) {
+        if (iss.flagTerm) {
+          try {
+            const ft = iss.flagTerm;
+            const reStr = ft.replace(/([.+?^=!:${}()|[\]/\\*])/g, '\\$1');
+            const ftLead = ft[0] === ' ' ? '' : '(?<![a-zA-Z0-9])';
+            const ftTrail = ft[ft.length-1] === ' ' ? '' : '(?![a-zA-Z0-9])';
+            tgt = tgt.replace(new RegExp(ftLead + '(' + reStr + ')' + ftTrail, 'gi'), '<span class="hl">$1</span>');
+          } catch(e) {}
+        }
+      }
+      if (_q) {
+        try {
+          const qEsc = _q.replace(/[-[\]{}()*+?.,\\^$|#]/g, '\\$&').replace(/\s+/g, '\\s+');
+          const pat = searchWhole ? '(?<![\\w])(' + qEsc + ')(?![\\w])' : '(' + qEsc + ')';
+          tgt = tgt.replace(new RegExp(pat, searchCase?'g':'gi'), '<span class="hl-diff">$1</span>');
+        } catch(e) {}
+      }
+      tgtHtml = tgt;
+    }
+
+    return `<tr style="${allIgnored ? 'opacity:.4;' : ''}">
+      <td class="col-seg" style="vertical-align:top;">${searchHighlight(grp.segId, _q)}</td>
+      <td class="col-src" style="vertical-align:top;">${(() => {
+        let src = escHtml(grp.src);
+        for (const iss of grp.issues) {
+          if (iss.srcTerm) {
+            try {
+              const reStr = iss.srcTerm.replace(/([.+?^=!:${}()|[\]\/\\*])/g, '\\$1');
+              src = src.replace(new RegExp('(' + reStr + ')', 'gi'), '<span class="hl">$1</span>');
+            } catch(e) {}
+          }
+        }
+        if (_q) {
+          try { src = src.replace(new RegExp('(' + _q.replace(/[-[\]{}()*+?.,\\^$|#]/g,'\\$&') + ')', searchCase?'g':'gi'), '<span class="hl-diff">$1</span>'); } catch(e) {}
+        }
+        return src;
+      })()}</td>
+      <td class="col-tgt" style="vertical-align:top;">${tgtHtml}</td>
+      <td class="col-detail" style="vertical-align:top;padding:6px 14px;">${detailHtml}</td>
+      <td></td>
+    </tr>`;
+  }).join('');
+
+  const activeCount = visible.filter(i => !ignoredKeys.has(issueKey(i))).length;
+  const ignoredCount = ignoredKeys.size;
+  document.getElementById('row-count').textContent = ignoredCount > 0
+    ? `${groups.length} segments · ${activeCount} active · ${ignoredCount} ignored`
+    : `${groups.length} segments · ${visible.length} issues`;
+}
+
+let _searchDebounce = null;
+function onSearchInput() {
+  const val = document.getElementById('search-box').value;
+  const btn = document.getElementById('search-clear');
+  btn.style.display = val ? 'flex' : 'none';
+  clearTimeout(_searchDebounce);
+  _searchDebounce = setTimeout(filterTable, 180);
+}
+
+function clearSearch() {
+  document.getElementById('search-box').value = '';
+  document.getElementById('search-clear').style.display = 'none';
+  filterTable();
+}
+
+function setSearchScope(scope) {
+  searchScope = scope;
+  const scopeMap = { all:'all', src:'source', tgt:'target', err:'error' };
+  ['all','src','tgt','err'].forEach(s => {
+    const btn = document.getElementById('btn-scope-' + s);
+    if (!btn) return;
+    const isActive = scopeMap[s] === scope;
+    btn.style.background = isActive ? '#4f9eff15' : 'transparent';
+    btn.style.borderColor = isActive ? '#4f9eff' : 'var(--border)';
+    btn.style.color = isActive ? '#4f9eff' : 'var(--muted)';
+  });
+  filterTable();
+}
+
+function toggleSearchOpt(opt) {
+  if (opt === 'case') {
+    searchCase = !searchCase;
+    const btn = document.getElementById('btn-case');
+    btn.style.borderColor = searchCase ? '#4f9eff' : 'var(--border)';
+    btn.style.color = searchCase ? '#4f9eff' : 'var(--muted)';
+    btn.style.background = searchCase ? '#4f9eff15' : 'transparent';
+  } else {
+    searchWhole = !searchWhole;
+    const btn = document.getElementById('btn-whole');
+    btn.style.borderColor = searchWhole ? '#4f9eff' : 'var(--border)';
+    btn.style.color = searchWhole ? '#4f9eff' : 'var(--muted)';
+    btn.style.background = searchWhole ? '#4f9eff15' : 'transparent';
+  }
+  filterTable();
+}
+
+function matchesSearch(iss, q) {
+  if (!q) return true;
+  let fields;
+  if (searchScope === 'source') fields = iss.src || '';
+  else if (searchScope === 'target') fields = plainTgt(iss) || '';
+  else if (searchScope === 'error') fields = plainDetail(iss) || '';
+  else fields = [iss.segId, iss.category, iss.src, plainTgt(iss), plainDetail(iss)].join(' ');
+
+  if (searchWhole) {
+    try {
+      const flags = searchCase ? '' : 'i';
+      const qEsc = q.replace(/[-[\]{}()*+?.,\\^$|#]/g,'\\$&').replace(/\s+/g,'\\s+');
+      const re = new RegExp('(?<![\\w])' + qEsc + '(?![\\w])', flags);
+      return re.test(fields);
+    } catch(e) { return false; }
+  }
+  // Phrase search without word boundary — flexible whitespace
+  const qNorm = q.replace(/\s+/g,' ').toLowerCase().trim();
+  const fNorm = fields.replace(/\s+/g,' ').toLowerCase();
+  return searchCase
+    ? fields.replace(/\s+/g,' ').includes(q.replace(/\s+/g,' '))
+    : fNorm.includes(qNorm);
+}
+
+function filterTable() {
+  const q = document.getElementById('search-box').value;
+  const source = tabGroups[activeTab] || [];
+  let base = showIgnored ? source : source.filter(i => !ignoredKeys.has(issueKey(i)));
+  if (activeFilter) base = base.filter(i => i.category === activeFilter);
+  if (activeTab === '(Optional Check) Preposition' && activePrepSubTab) base = base.filter(i => i._checkName === activePrepSubTab);
+  if (activeTab === 'Checklist' && activeChecklistSubTab) base = base.filter(i => i.category === activeChecklistSubTab);
+  const filtered = q ? base.filter(i => matchesSearch(i, q)) : base;
+  renderTable(filtered);
+}
+
+// ─── SUMMARY ──────────────────────────────────────────────────────────────────
+function renderSummary(totalSegs, totalRules) {
+  const cats = {};
+  for (const i of allIssues) cats[i.category] = (cats[i.category]||0)+1;
+  const cards = document.getElementById('summary-cards');
+
+  const mk = (num, label, cls, filterVal=null) => {
+    const isActive = activeFilter === filterVal && filterVal !== null;
+    const clickable = filterVal !== null;
+    return `<div class="stat-card highlight"
+      ${clickable ? `onclick="setSummaryFilter(${filterVal === null ? 'null' : `'${filterVal.replace(/'/g,"\'")}' `})"` : ''}
+      style="cursor:${clickable?'pointer':'default'};
+        border-color:${isActive ? 'var(--accent)' : 'var(--border)'};
+        background:${isActive ? '#4f72ff22' : ''};
+        transition:all .15s;"
+      title="${clickable ? `Filter by: ${label}` : ''}">
+      <div class="stat-num ${cls}">${num}</div>
+      <div class="stat-label">${label}</div>
+    </div>`;
+  };
+
+  // Custom colour overrides per category
+  const catColour = cat => {
+    if (cat === 'Number Mismatch') return 'red';
+    if (cat === '(Placeholder) Multiple Spacing') return 'yellow';
+    if (cat === 'Inconsistent Translation') return 'yellow';
+    return cats[cat] > 10 ? 'red' : cats[cat] > 3 ? 'yellow' : 'green';
+  };
+
+  // Fixed order: segments | total issues | Inconsistent Translation | then rest sorted by count | Double/Extra Spaces | checklist rules
+  // Fixed card order per image: 1=Inconsistent, 2=(Optional Check) Preposition, 3=Grammar, 4=Vocab, 5=Transitive Verb, 6=DNT, 7=Punctuation/Spacing, 8=Number Mismatch
+  const FIXED_ORDER = [
+    'Inconsistent Translation',
+    'DNT','Grammar','Vocab','Transitive Verb','From Kalcium','Verbs',
+    'Punctuation/Spacing','Number Mismatch','(Optional Check) Preposition'
+  ];
+  const PINNED_LAST_CAT = ['(Placeholder) Multiple Spacing'];
+  const shown = new Set([...FIXED_ORDER, ...PINNED_LAST_CAT]);
+  const extra = Object.keys(cats).filter(c => !shown.has(c)).sort((a,b) => cats[b]-cats[a]);
+  const ordered = [...FIXED_ORDER, ...extra].filter(c => cats[c]);
+
+  let h = mk(totalSegs, 'segments analysed', 'purple', null);
+  h += mk(allIssues.length, 'total issues', 'purple', '__all__');
+  for (const cat of ordered)
+    h += mk(cats[cat], escHtml(cat), catColour(cat), cat);
+  for (const cat of PINNED_LAST_CAT)
+    if (cats[cat]) h += mk(cats[cat], '(Placeholder) Multiple Spacing', catColour(cat), cat);
+
+  cards.innerHTML = h;
+}
+
+function setSummaryFilter(val) {
+  activeFilter = (val === '__all__' || val === activeFilter) ? null : val;
+  // re-render cards with current state
+  const cats2 = {}; for (const i of allIssues) cats2[i.category]=(cats2[i.category]||0)+1;
+  renderSummary(_lastTotalSegs, _lastTotalRules);
+  filterTable();
+}
+
+// ─── EXPORT EXCEL ─────────────────────────────────────────────────────────────
+function sanitiseSheet(name) {
+  return name.replace(/[:\\/\?\*\[\]]/g, '-').substring(0, 31);
+}
+
+function exportExcel() {
+  try {
+    if (!allIssues.length) { alert('No issues to export. Run QA first.'); return; }
+    const wb = XLSX.utils.book_new();
+    const COLS = ['Segment ID','Category','Source','Target','Detail'];
+    const s = v => String(v == null ? '' : v);
+    const toRow = i => [s(i.segId), s(i.category), s(i.src), s(plainTgt(i)), s(plainDetail(i))];
+    const setW = ws => { ws['!cols'] = [14,20,45,45,55].map(w=>({wch:w})); return ws; };
+
+    // Summary
+    const cats = {};
+    for (const i of allIssues) cats[s(i.category)] = (cats[s(i.category)]||0)+1;
+    const sumRows = [['QA Check Summary'],[''],['Category','Count'],
+      ...Object.entries(cats).sort((a,b)=>b[1]-a[1]), [], ['Total Issues', allIssues.length]];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sumRows), 'Summary');
+
+    const active = allIssues.filter(i => !ignoredKeys.has(issueKey(i)));
+
+    // All Issues
+    XLSX.utils.book_append_sheet(wb, setW(XLSX.utils.aoa_to_sheet([COLS, ...active.map(toRow)])), 'All Issues');
+
+    // Inconsistent Translation
+    const inconsistEx = active.filter(i=>i.category==='Inconsistent Translation');
+    if (inconsistEx.length) XLSX.utils.book_append_sheet(wb, setW(XLSX.utils.aoa_to_sheet([COLS,...inconsistEx.map(toRow)])), 'Inconsistent Translatn');
+
+    // Checklist tabs in order
+    const CL_ORDER = ['(Optional Check) Preposition','Grammar','Vocab','Transitive Verb','DNT','From Kalcium','Verbs'];
+    const clCats = new Set(active.filter(i=>i.sheetGroup==='Checklist').map(i=>i.category));
+    for (const cat of CL_ORDER) {
+      if (clCats.has(cat)) {
+        const ci = active.filter(i=>i.category===cat);
+        XLSX.utils.book_append_sheet(wb, setW(XLSX.utils.aoa_to_sheet([COLS,...ci.map(toRow)])), sanitiseSheet(cat));
+        clCats.delete(cat);
+      }
+    }
+    for (const cat of [...clCats].sort()) {
+      const ci = active.filter(i=>i.category===cat);
+      XLSX.utils.book_append_sheet(wb, setW(XLSX.utils.aoa_to_sheet([COLS,...ci.map(toRow)])), sanitiseSheet(cat));
+    }
+
+    // Punctuation/Spacing
+    const punctEx = active.filter(i=>i.category==='Punctuation/Spacing');
+    if (punctEx.length) XLSX.utils.book_append_sheet(wb, setW(XLSX.utils.aoa_to_sheet([COLS,...punctEx.map(toRow)])), 'Punctuation-Spacing');
+
+    // Number Mismatch
+    const numEx = active.filter(i=>i.category==='Number Mismatch');
+    if (numEx.length) XLSX.utils.book_append_sheet(wb, setW(XLSX.utils.aoa_to_sheet([COLS,...numEx.map(toRow)])), 'Number Mismatch');
+
+    // Double/Extra Spaces
+    const sp = active.filter(i=>i.category==='(Placeholder) Multiple Spacing');
+    if (sp.length) XLSX.utils.book_append_sheet(wb, setW(XLSX.utils.aoa_to_sheet([COLS,...sp.map(toRow)])), 'Double-Extra Spaces');
+
+    // Download
+    const fname = 'QA_Report_' + new Date().toISOString().slice(0,10) + '.xlsx';
+    const buf = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([buf], {type:'application/octet-stream'}));
+    a.download = fname;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 300);
+  } catch(e) {
+    alert('Export failed: ' + e.message);
+    console.error(e);
+  }
+}
+
+function plainTgt(iss) {
+  // For inconsistency issues, return plain text variants instead of HTML
+  if (iss._variants) return iss._variants.join(' | ');
+  return iss.tgt;
+}
+
+function plainDetail(iss) {
+  if (iss._variants) return `${iss._variants.length} variants: ` + iss._variants.map((v,i)=>{
+    const ids = iss._tgtMap[v].slice(0,5).join(', ');
+    return `[Seg ${ids}] ${v}`;
+  }).join(' | ');
+  return iss.detail;
+}
+
+function addSheet(wb, name, issues, cols) {
+  // Exclude ignored issues from export
+  const active = issues.filter(i => !ignoredKeys.has(issueKey(i)));
+  const rows = [cols, ...active.map(i=>[i.segId, i.category, i.src, plainTgt(i), plainDetail(i)])];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [14,20,45,45,55].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb, ws, name);
+}
+
+function exportCSV() {
+  const active = allIssues.filter(i => !ignoredKeys.has(issueKey(i)));
+  const rows = [['Segment ID','Category','Source','Target','Detail'],
+    ...active.map(i=>[i.segId,i.category,i.src,plainTgt(i),plainDetail(i)])];
+  const csv = rows.map(r=>r.map(c=>'"'+String(c||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`QA_Report_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+}
+</script>
+</body>
+</html>
