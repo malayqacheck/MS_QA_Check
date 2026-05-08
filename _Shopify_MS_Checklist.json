@@ -29,7 +29,7 @@
   ],
   "DNT": [
     {
-      "No": 1,
+      "No": "1",
       "Check Name": "Shopify",
       "Source Term": "Shopify",
       "Target Term": "Shopify",
@@ -42,7 +42,7 @@
       "Without": "Yes"
     },
     {
-      "No": 2,
+      "No": "2",
       "Check Name": "Tinker",
       "Source Term": "Tinker",
       "Target Term": "Tinker",
@@ -55,7 +55,7 @@
       "Without": "Yes"
     },
     {
-      "No": 3,
+      "No": "3",
       "Check Name": "Google Play",
       "Source Term": "Google Play",
       "Target Term": "Google Play",
@@ -68,7 +68,7 @@
       "Without": "Yes"
     },
     {
-      "No": 5,
+      "No": "5",
       "Check Name": "Storefront API",
       "Source Term": "Storefront API",
       "Target Term": "Storefront API",
@@ -81,7 +81,7 @@
       "Without": "Yes"
     },
     {
-      "No": 6,
+      "No": "6",
       "Check Name": "Shop Campaign",
       "Source Term": "Shop Campaign",
       "Target Term": "Shop Campaign",
@@ -94,7 +94,7 @@
       "Without": "Yes"
     },
     {
-      "No": 7,
+      "No": "7",
       "Check Name": "Linkedin",
       "Source Term": "Linkedin",
       "Target Term": "LinkedIn",
@@ -107,33 +107,33 @@
       "Without": "Yes"
     },
     {
-      "No": 8,
-      "Check Name": "",
-      "Source Term": "",
-      "Target Term": "",
+      "No": "8",
+      "Check Name": "Agentic Storefronts",
+      "Source Term": "Agentic Storefronts",
+      "Target Term": "Agentic Storefronts",
       "Description": "",
       "Exclusion List": "",
       "Pair Term": "",
       "Context Term": "",
       "Case Check": "Yes",
       "Whole Word": "Yes",
-      "Without": ""
+      "Without": "Yes"
     },
     {
-      "No": 9,
-      "Check Name": "",
-      "Source Term": "",
-      "Target Term": "",
+      "No": "9",
+      "Check Name": "agentic storefront",
+      "Source Term": "agentic storefront",
+      "Target Term": "agentic storefront",
       "Description": "",
       "Exclusion List": "",
       "Pair Term": "",
       "Context Term": "",
       "Case Check": "Yes",
       "Whole Word": "Yes",
-      "Without": ""
+      "Without": "Yes"
     },
     {
-      "No": 10,
+      "No": "10",
       "Check Name": "",
       "Source Term": "",
       "Target Term": "",
@@ -143,10 +143,10 @@
       "Context Term": "",
       "Case Check": "Yes",
       "Whole Word": "Yes",
-      "Without": ""
+      "Without": "Yes"
     },
     {
-      "No": 11,
+      "No": "11",
       "Check Name": "",
       "Source Term": "",
       "Target Term": "",
@@ -156,10 +156,10 @@
       "Context Term": "",
       "Case Check": "Yes",
       "Whole Word": "Yes",
-      "Without": ""
+      "Without": "Yes"
     },
     {
-      "No": 12,
+      "No": "12",
       "Check Name": "",
       "Source Term": "",
       "Target Term": "",
@@ -169,12 +169,12 @@
       "Context Term": "",
       "Case Check": "Yes",
       "Whole Word": "Yes",
-      "Without": ""
+      "Without": "Yes"
     }
   ],
   "Grammar": [
     {
-      "No": 1,
+      "No": "1",
       "Check Name": "kemas kini",
       "Source Term": "",
       "Target Term": "kemas kini",
@@ -186,7 +186,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 2,
+      "No": "2",
       "Check Name": "kemas kinikan",
       "Source Term": "",
       "Target Term": "kemas kinikan",
@@ -198,7 +198,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 3,
+      "No": "3",
       "Check Name": "pengemaskinian",
       "Source Term": "updates",
       "Target Term": "pengemaskinian",
@@ -210,7 +210,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 4,
+      "No": "4",
       "Check Name": "mengemas kini",
       "Source Term": "",
       "Target Term": "mengemas kini",
@@ -222,7 +222,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 5,
+      "No": "5",
       "Check Name": "mengemas kinikan",
       "Source Term": "",
       "Target Term": "mengemas kinikan",
@@ -234,7 +234,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 6,
+      "No": "6",
       "Check Name": "dikemas kinikan",
       "Source Term": "",
       "Target Term": "dikemas kinikan",
@@ -246,7 +246,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 7,
+      "No": "7",
       "Check Name": "dikemas kini",
       "Source Term": "",
       "Target Term": "dikemas kini",
@@ -258,7 +258,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 8,
+      "No": "8",
       "Check Name": "mengemaskini",
       "Source Term": "",
       "Target Term": "mengemaskini",
@@ -270,7 +270,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 9,
+      "No": "9",
       "Check Name": "hingga ",
       "Source Term": "",
       "Target Term": "hingga ",
@@ -282,7 +282,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 10,
+      "No": "10",
       "Check Name": "-hingga",
       "Source Term": "up to",
       "Target Term": "-hingga",
@@ -294,7 +294,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 11,
+      "No": "11",
       "Check Name": "mengenai",
       "Source Term": "",
       "Target Term": "mengenai",
@@ -306,11 +306,11 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 12,
+      "No": "12",
       "Check Name": "di Shop",
       "Source Term": "",
       "Target Term": "di Shop",
-      "Description": "\"Shop\" is abstract platform not physical | \"di\" is used when referring to actual physical place | If unsure use \"melalui\" to mean berfungsi sebagai perantara, cara, alat, saluran, aktiviti, proses dan lain-lain untuk melakukan, memperoleh atau mencapai sesuatu.\" Kamus Dewan Perdana, pg 1223.",
+      "Description": "\"Shop\" is abstract platform not physical | \"di\" is used when referring to actual physical place |use either pada/dalam/melalui",
       "Exclusion List": "",
       "Pair Term": "",
       "Context Term": "",
@@ -318,7 +318,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 13,
+      "No": "13",
       "Check Name": "pasca ",
       "Source Term": "",
       "Target Term": "pasca ",
@@ -330,7 +330,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 14,
+      "No": "14",
       "Check Name": "pra ",
       "Source Term": "",
       "Target Term": "pra ",
@@ -342,7 +342,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 15,
+      "No": "15",
       "Check Name": "pasca-",
       "Source Term": "",
       "Target Term": "pasca-",
@@ -354,7 +354,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 16,
+      "No": "16",
       "Check Name": "pra-",
       "Source Term": "",
       "Target Term": "pra-",
@@ -366,7 +366,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 17,
+      "No": "17",
       "Check Name": "di aplikasi",
       "Source Term": "",
       "Target Term": "di aplikasi",
@@ -378,7 +378,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 18,
+      "No": "18",
       "Check Name": "di tetapan",
       "Source Term": "",
       "Target Term": "di tetapan",
@@ -390,11 +390,11 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 19,
+      "No": "19",
       "Check Name": "membantu me",
       "Source Term": "",
       "Target Term": "membantu me",
-      "Description": "",
+      "Description": "Grammar issue | consecutive verbs of imbuhan meN is grammatically incorrect.",
       "Exclusion List": "",
       "Pair Term": "",
       "Context Term": "",
@@ -402,7 +402,7 @@
       "Whole Word": "No"
     },
     {
-      "No": 20,
+      "No": "20",
       "Check Name": "dalam me",
       "Source Term": "",
       "Target Term": "dalam me",
@@ -414,7 +414,7 @@
       "Whole Word": "No"
     },
     {
-      "No": 21,
+      "No": "21",
       "Check Name": " apa jua ",
       "Source Term": "",
       "Target Term": " apa jua ",
@@ -426,7 +426,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 22,
+      "No": "22",
       "Check Name": "yang saya telah",
       "Source Term": "",
       "Target Term": "yang saya telah",
@@ -438,7 +438,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 23,
+      "No": "23",
       "Check Name": "yang saya sedang",
       "Source Term": "",
       "Target Term": "yang saya sedang",
@@ -450,7 +450,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 24,
+      "No": "24",
       "Check Name": "yang saya perlu",
       "Source Term": "",
       "Target Term": "yang saya perlu",
@@ -462,7 +462,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 25,
+      "No": "25",
       "Check Name": "yang saya ingin",
       "Source Term": "",
       "Target Term": "yang saya ingin",
@@ -474,7 +474,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 26,
+      "No": "26",
       "Check Name": "yang saya cuba",
       "Source Term": "",
       "Target Term": "yang saya cuba",
@@ -486,7 +486,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 27,
+      "No": "27",
       "Check Name": "yang saya boleh",
       "Source Term": "",
       "Target Term": "yang saya boleh",
@@ -498,7 +498,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 28,
+      "No": "28",
       "Check Name": "yang saya baru",
       "Source Term": "",
       "Target Term": "yang saya baru",
@@ -510,7 +510,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 29,
+      "No": "29",
       "Check Name": "yang perlu mereka",
       "Source Term": "",
       "Target Term": "yang perlu mereka",
@@ -522,7 +522,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 30,
+      "No": "30",
       "Check Name": "yang mesti mereka",
       "Source Term": "",
       "Target Term": "yang mesti mereka",
@@ -534,7 +534,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 31,
+      "No": "31",
       "Check Name": "yang mereka",
       "Source Term": "",
       "Target Term": "yang mereka",
@@ -546,7 +546,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 32,
+      "No": "32",
       "Check Name": "yang boleh mereka",
       "Source Term": "",
       "Target Term": "yang boleh mereka",
@@ -558,7 +558,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 33,
+      "No": "33",
       "Check Name": "yang anda telah",
       "Source Term": "",
       "Target Term": "yang anda telah",
@@ -570,7 +570,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 34,
+      "No": "34",
       "Check Name": "yang anda sedang",
       "Source Term": "",
       "Target Term": "yang anda sedang",
@@ -582,7 +582,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 35,
+      "No": "35",
       "Check Name": "yang anda perlu",
       "Source Term": "",
       "Target Term": "yang anda perlu",
@@ -594,7 +594,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 36,
+      "No": "36",
       "Check Name": "yang anda mungkin",
       "Source Term": "",
       "Target Term": "yang anda mungkin",
@@ -606,7 +606,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 37,
+      "No": "37",
       "Check Name": "yang anda ingin",
       "Source Term": "",
       "Target Term": "yang anda ingin",
@@ -618,7 +618,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 38,
+      "No": "38",
       "Check Name": "yang anda dapat",
       "Source Term": "",
       "Target Term": "yang anda dapat",
@@ -630,7 +630,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 39,
+      "No": "39",
       "Check Name": "yang anda cuba",
       "Source Term": "",
       "Target Term": "yang anda cuba",
@@ -642,7 +642,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 40,
+      "No": "40",
       "Check Name": "yang anda boleh",
       "Source Term": "",
       "Target Term": "yang anda boleh",
@@ -654,7 +654,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 41,
+      "No": "41",
       "Check Name": "yang anda baru",
       "Source Term": "",
       "Target Term": "yang anda baru",
@@ -666,7 +666,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 42,
+      "No": "42",
       "Check Name": "walaupun jika",
       "Source Term": "",
       "Target Term": "walaupun jika",
@@ -678,7 +678,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 43,
+      "No": "43",
       "Check Name": "ia",
       "Source Term": "",
       "Target Term": " ia ",
@@ -690,7 +690,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 44,
+      "No": "44",
       "Check Name": ", dan ",
       "Source Term": "",
       "Target Term": ", dan ",
@@ -702,7 +702,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 45,
+      "No": "45",
       "Check Name": "percepatkan",
       "Source Term": "",
       "Target Term": "percepatkan",
@@ -714,7 +714,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 46,
+      "No": "46",
       "Check Name": "Tetapi",
       "Source Term": "",
       "Target Term": "Tetapi",
@@ -726,7 +726,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 47,
+      "No": "47",
       "Check Name": "memberikan anda",
       "Source Term": "",
       "Target Term": "memberikan anda",
@@ -738,7 +738,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 48,
+      "No": "48",
       "Check Name": "di dalam talian",
       "Source Term": "",
       "Target Term": "di dalam talian",
@@ -750,7 +750,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 49,
+      "No": "49",
       "Check Name": "ialah untuk",
       "Source Term": "",
       "Target Term": "ialah untuk",
@@ -762,7 +762,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 50,
+      "No": "50",
       "Check Name": "adalah cara",
       "Source Term": "",
       "Target Term": "adalah cara",
@@ -774,7 +774,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 51,
+      "No": "51",
       "Check Name": "cara untuk",
       "Source Term": "",
       "Target Term": "cara untuk",
@@ -786,7 +786,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 52,
+      "No": "52",
       "Check Name": "kadang-kala ",
       "Source Term": "",
       "Target Term": "kadang-kala ",
@@ -798,7 +798,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 53,
+      "No": "53",
       "Check Name": "kadang-kadang",
       "Source Term": "",
       "Target Term": "kadang-kadang",
@@ -810,7 +810,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 54,
+      "No": "54",
       "Check Name": ", atau",
       "Source Term": "",
       "Target Term": ", atau",
@@ -822,7 +822,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 55,
+      "No": "55",
       "Check Name": "bagaimana",
       "Source Term": "",
       "Target Term": "bagaimana",
@@ -834,7 +834,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 56,
+      "No": "56",
       "Check Name": "apa",
       "Source Term": "",
       "Target Term": "apa",
@@ -846,7 +846,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 57,
+      "No": "57",
       "Check Name": "berapa",
       "Source Term": "",
       "Target Term": "berapa",
@@ -858,7 +858,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 58,
+      "No": "58",
       "Check Name": "di mana",
       "Source Term": "",
       "Target Term": "di mana",
@@ -870,7 +870,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 59,
+      "No": "59",
       "Check Name": "yang mana",
       "Source Term": "",
       "Target Term": "yang mana",
@@ -882,7 +882,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 60,
+      "No": "60",
       "Check Name": "menjual melalui",
       "Source Term": "",
       "Target Term": "menjual melalui",
@@ -894,7 +894,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 61,
+      "No": "61",
       "Check Name": "membantu men",
       "Source Term": "",
       "Target Term": "membantu men",
@@ -906,7 +906,7 @@
       "Whole Word": "No "
     },
     {
-      "No": 62,
+      "No": "62",
       "Check Name": "membantu mem",
       "Source Term": "",
       "Target Term": "membantu mem",
@@ -918,7 +918,7 @@
       "Whole Word": "No "
     },
     {
-      "No": 63,
+      "No": "63",
       "Check Name": "tertakluk kepada",
       "Source Term": "",
       "Target Term": "tertakluk kepada",
@@ -930,7 +930,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 64,
+      "No": "64",
       "Check Name": "sehingga",
       "Source Term": "",
       "Target Term": "sehingga",
@@ -942,7 +942,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 65,
+      "No": "65",
       "Check Name": "antara",
       "Source Term": "",
       "Target Term": "antara",
@@ -954,7 +954,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 66,
+      "No": "66",
       "Check Name": "tambah",
       "Source Term": "",
       "Target Term": "tambah",
@@ -966,7 +966,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 67,
+      "No": "67",
       "Check Name": "hingga ke",
       "Source Term": "",
       "Target Term": "hingga ke",
@@ -978,7 +978,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 68,
+      "No": "68",
       "Check Name": "di mana sahaja",
       "Source Term": "",
       "Target Term": "di mana sahaja",
@@ -990,7 +990,7 @@
       "Whole Word": ""
     },
     {
-      "No": 69,
+      "No": "69",
       "Check Name": "berbanding",
       "Source Term": "",
       "Target Term": "berbanding",
@@ -1002,7 +1002,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 70,
+      "No": "70",
       "Check Name": "dalam mem",
       "Source Term": "",
       "Target Term": "dalam mem",
@@ -1014,7 +1014,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 71,
+      "No": "71",
       "Check Name": "dalam men",
       "Source Term": "",
       "Target Term": "dalam men",
@@ -1026,7 +1026,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 72,
+      "No": "72",
       "Check Name": "dengan menggunakan",
       "Source Term": "",
       "Target Term": "dengan menggunakan",
@@ -1038,7 +1038,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 73,
+      "No": "73",
       "Check Name": "demi men",
       "Source Term": "",
       "Target Term": "demi men",
@@ -1050,7 +1050,7 @@
       "Whole Word": "No "
     },
     {
-      "No": 74,
+      "No": "74",
       "Check Name": "demi mem",
       "Source Term": "",
       "Target Term": "demi mem",
@@ -1062,7 +1062,7 @@
       "Whole Word": "No "
     },
     {
-      "No": 75,
+      "No": "75",
       "Check Name": "terhadap",
       "Source Term": "",
       "Target Term": "terhadap",
@@ -1074,7 +1074,7 @@
       "Whole Word": "No "
     },
     {
-      "No": 76,
+      "No": "76",
       "Check Name": "akses ke",
       "Source Term": "",
       "Target Term": "akses ke",
@@ -1086,7 +1086,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 77,
+      "No": "77",
       "Check Name": "apa jua",
       "Source Term": "",
       "Target Term": "apa jua",
@@ -1098,7 +1098,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 78,
+      "No": "78",
       "Check Name": "berdasarkan pada",
       "Source Term": "",
       "Target Term": "berdasarkan pada",
@@ -1110,7 +1110,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 79,
+      "No": "79",
       "Check Name": "di dalam",
       "Source Term": "",
       "Target Term": "di dalam",
@@ -1122,7 +1122,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 80,
+      "No": "80",
       "Check Name": "hanya",
       "Source Term": "",
       "Target Term": "hanya",
@@ -1134,8 +1134,8 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 81,
-      "Check Name": "",
+      "No": "81",
+      "Check Name": "jangan men",
       "Source Term": "",
       "Target Term": "jangan men",
       "Description": "Grammar issue: after kata larangan jangan, it should not be followed by imbuhan",
@@ -1146,7 +1146,19 @@
       "Whole Word": "No "
     },
     {
-      "No": 82,
+      "No": "82",
+      "Check Name": "di laman",
+      "Source Term": "",
+      "Target Term": "di laman",
+      "Description": "Please change to: pada laman | for abstract like web site",
+      "Exclusion List": "",
+      "Pair Term": "",
+      "Context Term": "",
+      "Case Check": "No ",
+      "Whole Word": "Yes"
+    },
+    {
+      "No": "83",
       "Check Name": "",
       "Source Term": "",
       "Target Term": "",
@@ -1158,7 +1170,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 83,
+      "No": "84",
       "Check Name": "",
       "Source Term": "",
       "Target Term": "",
@@ -1170,19 +1182,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 84,
-      "Check Name": "",
-      "Source Term": "",
-      "Target Term": "",
-      "Description": "",
-      "Exclusion List": "",
-      "Pair Term": "",
-      "Context Term": "",
-      "Case Check": "No ",
-      "Whole Word": "Yes"
-    },
-    {
-      "No": 85,
+      "No": "85",
       "Check Name": "",
       "Source Term": "",
       "Target Term": "",
@@ -2013,7 +2013,7 @@
     },
     {
       "No": "",
-      "Check Name": "",
+      "Check Name": "dijedakan",
       "Source Term": "",
       "Target Term": "dijedakan",
       "Description": "Please change to: dijeda",
@@ -2025,7 +2025,7 @@
     },
     {
       "No": "",
-      "Check Name": "",
+      "Check Name": "selamat datang",
       "Source Term": "",
       "Target Term": "selamat datang",
       "Description": "Check context : \"selamat datang is something you wish people, for others like welcome offer, use \"alu-aluan\"",
@@ -2037,10 +2037,82 @@
     },
     {
       "No": "",
-      "Check Name": "",
+      "Check Name": "memperkayakan",
       "Source Term": "",
-      "Target Term": "",
+      "Target Term": "memperkayakan",
+      "Description": "Please change to: memperkaya",
+      "Exclusion List": "",
+      "Pair Term": "",
+      "Context Term": "",
+      "Case Check": "No",
+      "Whole Word": "Yes"
+    },
+    {
+      "No": "",
+      "Check Name": "hasrat",
+      "Source Term": "intent",
+      "Target Term": "hasrat",
+      "Description": "Please change to: niat | when refering to buyer intent",
+      "Exclusion List": "",
+      "Pair Term": "",
+      "Context Term": "",
+      "Case Check": "No",
+      "Whole Word": "Yes"
+    },
+    {
+      "No": "",
+      "Check Name": "ditemui",
+      "Source Term": "",
+      "Target Term": "ditemui",
+      "Description": "Please change to: ditemukan | for consistency",
+      "Exclusion List": "",
+      "Pair Term": "",
+      "Context Term": "",
+      "Case Check": "No",
+      "Whole Word": "Yes"
+    },
+    {
+      "No": "",
+      "Check Name": "menemui",
+      "Source Term": "",
+      "Target Term": "menemui",
+      "Description": "Please change to: menemukan | for consistency",
+      "Exclusion List": "",
+      "Pair Term": "",
+      "Context Term": "",
+      "Case Check": "No",
+      "Whole Word": "Yes"
+    },
+    {
+      "No": "",
+      "Check Name": "-Sila cuba lagi nanti.",
+      "Source Term": "Please try again later.",
+      "Target Term": "-Sila cuba lagi nanti.",
       "Description": "",
+      "Exclusion List": "",
+      "Pair Term": "",
+      "Context Term": "",
+      "Case Check": "No",
+      "Whole Word": "Yes"
+    },
+    {
+      "No": "",
+      "Check Name": "alatan",
+      "Source Term": "tools",
+      "Target Term": "alatan",
+      "Description": "Please change to: alat | for consistency",
+      "Exclusion List": "",
+      "Pair Term": "",
+      "Context Term": "",
+      "Case Check": "No",
+      "Whole Word": "Yes"
+    },
+    {
+      "No": "",
+      "Check Name": "berlatar belakang",
+      "Source Term": "",
+      "Target Term": "berlatar belakang",
+      "Description": "Please change to: berlatarbelakangkan",
       "Exclusion List": "",
       "Pair Term": "",
       "Context Term": "",
@@ -2051,20 +2123,8 @@
       "No": "",
       "Check Name": "",
       "Source Term": "",
-      "Target Term": "",
-      "Description": "",
-      "Exclusion List": "",
-      "Pair Term": "",
-      "Context Term": "",
-      "Case Check": "No",
-      "Whole Word": "Yes"
-    },
-    {
-      "No": "",
-      "Check Name": "",
-      "Source Term": "",
-      "Target Term": "",
-      "Description": "",
+      "Target Term": "autopilot",
+      "Description": "Please change to: autopandu | to mean run automaticallly.",
       "Exclusion List": "",
       "Pair Term": "",
       "Context Term": "",
@@ -2086,7 +2146,7 @@
   ],
   "(Optional Check) Preposition": [
     {
-      "No": 1,
+      "No": "1",
       "Check Name": "ke",
       "Source Term": "",
       "Target Term": "ke",
@@ -2098,7 +2158,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 2,
+      "No": "2",
       "Check Name": "kepada",
       "Source Term": "",
       "Target Term": "kepada",
@@ -2110,7 +2170,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 3,
+      "No": "3",
       "Check Name": "di ",
       "Source Term": "",
       "Target Term": "di ",
@@ -2122,7 +2182,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 4,
+      "No": "4",
       "Check Name": "dari",
       "Source Term": "",
       "Target Term": "dari",
@@ -2134,7 +2194,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 5,
+      "No": "5",
       "Check Name": "dalam",
       "Source Term": "",
       "Target Term": "dalam",
@@ -2146,7 +2206,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 6,
+      "No": "6",
       "Check Name": "di dalam",
       "Source Term": "",
       "Target Term": "di dalam",
@@ -2158,7 +2218,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 7,
+      "No": "7",
       "Check Name": "pada",
       "Source Term": "",
       "Target Term": "pada",
@@ -2170,7 +2230,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 8,
+      "No": "8",
       "Check Name": "daripada",
       "Source Term": "",
       "Target Term": "daripada",
@@ -2182,7 +2242,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 9,
+      "No": "9",
       "Check Name": "",
       "Source Term": "",
       "Target Term": "di dalamnya",
@@ -2194,7 +2254,7 @@
       "Whole Word": "Yes"
     },
     {
-      "No": 10,
+      "No": "10",
       "Check Name": "",
       "Source Term": "",
       "Target Term": "",
@@ -2206,7 +2266,7 @@
       "Whole Word": ""
     },
     {
-      "No": 11,
+      "No": "11",
       "Check Name": "",
       "Source Term": "",
       "Target Term": "",
