@@ -1193,10 +1193,10 @@
     },
     {
       "No": "88",
-      "Check Name": "",
+      "Check Name": "yang mahu anda",
       "Source Term": "",
-      "Target Term": "",
-      "Description": "",
+      "Target Term": "yang mahu anda",
+      "Description": "Please change to: yang ingin anda | for accross board consistency",
       "Exclusion List": "",
       "Pair Term": "",
       "Context Term": "",
