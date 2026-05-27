@@ -2263,10 +2263,10 @@
     },
     {
       "No": "",
-      "Check Name": "",
+      "Check Name": "provinsi",
       "Source Term": "",
-      "Target Term": "",
-      "Description": "",
+      "Target Term": "provinsi",
+      "Description": "Please change to: wilayah | Provinsi is Indonesian word",
       "Exclusion List": "",
       "Pair Term": "",
       "Context Term": "",
